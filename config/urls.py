@@ -8,6 +8,8 @@ def inicio(request):
 
 urlpatterns = [
 
+    path('', inicio),  # 👈 ESTA LÍNEA FALTABA
+
     path('admin/', admin.site.urls),
 
     path('alumnos/', include('alumnos.urls')),
