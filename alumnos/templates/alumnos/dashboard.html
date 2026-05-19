@@ -1,0 +1,121 @@
+{% extends 'base.html' %}
+
+{% block content %}
+
+<h1 class="mb-4">
+    Dashboard
+</h1>
+
+<div class="row">
+
+    <!-- CARD TOTAL ALUMNOS -->
+
+    <div class="col-md-6">
+
+        <div class="card shadow border-0">
+
+            <div class="card-body">
+
+                <h5 class="card-title">
+                    Total Alumnos
+                </h5>
+
+                <h1>
+                    {{ total_alumnos }}
+                </h1>
+
+            </div>
+
+        </div>
+
+    </div>
+
+    <!-- CARD TOTAL CARRERAS -->
+
+    <div class="col-md-6">
+
+        <div class="card shadow border-0">
+
+            <div class="card-body">
+
+                <h5 class="card-title">
+                    Total Carreras
+                </h5>
+
+                <h1>
+                    {{ total_carreras }}
+                </h1>
+
+            </div>
+
+        </div>
+
+    </div>
+
+</div>
+
+<!-- GRAFICA -->
+
+<div class="card shadow border-0 mt-4">
+
+    <div class="card-body">
+
+        <h4 class="mb-4">
+
+            Alumnos por Carrera
+
+        </h4>
+
+        <canvas id="graficaCarreras"></canvas>
+
+    </div>
+
+</div>
+
+<!-- CHART JS -->
+
+<script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+
+<script>
+
+    const ctx = document.getElementById(
+        'graficaCarreras'
+    );
+
+    new Chart(ctx, {
+
+        type: 'bar',
+
+        data: {
+
+            labels: {{ labels|safe }},
+
+            datasets: [{
+
+                label: 'Alumnos',
+
+                data: {{ data|safe }},
+
+                borderWidth: 1
+
+            }]
+        },
+
+        options: {
+
+            responsive: true,
+
+            scales: {
+
+                y: {
+
+                    beginAtZero: true
+
+                }
+            }
+        }
+    });
+
+</script>
+
+{% endblock %}

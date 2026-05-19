@@ -1,0 +1,134 @@
+{% extends 'base.html' %}
+
+{% block content %}
+
+<div class="card shadow">
+
+    <div class="card-header bg-primary text-white">
+
+        <h2>Lista de Alumnos</h2>
+
+    </div>
+
+    <div class="card-body">
+
+        <form method="GET"
+      class="mb-3">
+
+    <div class="row">
+
+        <div class="col-md-10">
+
+            <input type="text"
+                   name="buscar"
+                   class="form-control"
+                   placeholder="Buscar alumno...">
+
+        </div>
+
+        <div class="col-md-2">
+
+            <button type="submit"
+                    class="btn btn-primary w-100">
+
+                Buscar
+
+            </button>
+
+        </div>
+
+    </div>
+
+</form>
+
+        {% if perms.alumnos.add_alumno %}
+
+<a href="/alumnos/crear/"
+   class="btn btn-success mb-3">
+
+    Agregar Alumno
+
+</a>
+
+{% endif %}
+
+        <a href="/alumnos/exportar-excel/"
+   class="btn btn-success mb-3">
+
+    Exportar Excel
+
+</a>
+
+<a href="/alumnos/importar-excel/"
+   class="btn btn-primary mb-3">
+
+    Importar Excel
+
+</a>
+
+        <table class="table table-hover table-bordered">
+
+            <thead class="table-dark">
+
+                <tr>
+
+                    <th>Matrícula</th>
+                    <th>Nombre</th>
+                    <th>Correo</th>
+                    <th>Carrera</th>
+                    <th>Acciones</th>
+
+                </tr>
+
+            </thead>
+
+            <tbody>
+
+                {% for alumno in alumnos %}
+
+                <tr>
+
+                    <td>{{ alumno.matricula }}</td>
+                    <td>{{ alumno.nombre }}</td>
+                    <td>{{ alumno.correo }}</td>
+                    <td>{{ alumno.carrera }}</td>
+
+                    <td>
+
+                        {% if perms.alumnos.change_alumno %}
+
+                            <a href="/alumnos/editar/{{ alumno.id }}/"
+                               class="btn btn-warning btn-sm">
+                            
+                                Editar
+                            
+                            </a>
+                            
+                            {% endif %}
+
+                        {% if perms.alumnos.delete_alumno %}
+                            
+                            <a href="/alumnos/eliminar/{{ alumno.id }}/"
+                               class="btn btn-danger btn-sm">
+                            
+                                Eliminar
+                            
+                            </a>
+                            
+                            {% endif %}
+
+                    </td>
+
+                </tr>
+
+                {% endfor %}
+
+            </tbody>
+
+        </table>
+
+    </div>
+
+</div>
+
+{% endblock %}

@@ -1,0 +1,112 @@
+<!DOCTYPE html>
+<html lang="es">
+
+<head>
+
+    <meta charset="UTF-8">
+
+    <meta name="viewport"
+          content="width=device-width, initial-scale=1.0">
+
+    <title>Sistema Escolar</title>
+
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.7/dist/css/bootstrap.min.css"
+          rel="stylesheet">
+
+</head>
+
+<body class="bg-light">
+
+    <nav class="navbar navbar-expand-lg navbar-dark bg-dark">
+
+    <div class="container">
+
+        <a class="navbar-brand"
+           href="/alumnos/">
+
+            Sistema Escolar
+
+            <a href="/alumnos/dashboard/"
+   class="btn btn-outline-light me-2">
+
+    Dashboard
+
+</a>
+
+<a href="/alumnos/"
+   class="btn btn-outline-light">
+
+    Alumnos
+
+</a>
+
+        </a>
+
+        <div class="d-flex align-items-center">
+
+            <span class="text-white me-3">
+
+                Bienvenido:
+                <strong>{{ user.username }}</strong>
+
+            </span>
+
+            <a href="/logout/"
+               class="btn btn-danger btn-sm">
+
+                Cerrar Sesión
+
+            </a>
+
+        </div>
+
+    </div>
+
+</nav>
+
+        <div class="container">
+
+            <a class="navbar-brand"
+               href="/alumnos/">
+
+                Sistema Escolar
+
+            </a>
+
+        </div>
+
+    </nav>
+
+    <div class="container mt-4">
+
+        {% if messages %}
+
+    {% for message in messages %}
+
+        <div class="alert alert-success alert-dismissible fade show"
+             role="alert">
+
+            {{ message }}
+
+            <button type="button"
+                    class="btn-close"
+                    data-bs-dismiss="alert">
+
+            </button>
+
+        </div>
+
+    {% endfor %}
+
+{% endif %}
+
+        {% block content %}
+
+        {% endblock %}
+
+    </div>
+
+</body>
+
+<script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.7/dist/js/bootstrap.bundle.min.js"></script>
+</html>
