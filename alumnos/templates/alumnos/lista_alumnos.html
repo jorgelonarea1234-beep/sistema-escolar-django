@@ -2,125 +2,121 @@
 
 {% block content %}
 
-<div class="card shadow">
+<div class="card p-4 shadow-sm">
 
-    <div class="card-header bg-primary text-white">
+    <!-- 🔥 HEADER -->
+    <div class="d-flex justify-content-between align-items-center mb-3">
 
-        <h2>Lista de Alumnos</h2>
+        <h4 class="mb-0 fw-semibold">
+            👨‍🎓 Alumnos
+        </h4>
 
-    </div>
+        <div class="d-flex gap-2 align-items-start">
 
-    <div class="card-body">
-
-        <form method="GET"
-      class="mb-3">
-
-    <div class="row">
-
-        <div class="col-md-10">
-
-            <input type="text"
-                   name="buscar"
-                   class="form-control"
-                   placeholder="Buscar alumno...">
-
-        </div>
-
-        <div class="col-md-2">
-
-            <button type="submit"
-                    class="btn btn-primary w-100">
-
-                Buscar
-
+            <!-- 🔥 IMPORTAR -->
+            <button class="btn btn-outline-success btn-sm"
+                    data-bs-toggle="modal"
+                    data-bs-target="#modalImportar">
+                Importar
             </button>
 
+            <!-- 🔥 EXPORTAR -->
+            <a href="/alumnos/exportar-excel/"
+               class="btn btn-outline-dark btn-sm">
+                Exportar
+            </a>
+
+            <!-- 🔥 CREAR -->
+            {% if perms.alumnos.add_alumno %}
+            <a href="/alumnos/crear/"
+               class="btn btn-dark btn-sm px-3">
+                + Nuevo
+            </a>
+            {% endif %}
+
         </div>
 
     </div>
 
-</form>
+    <!-- 🔍 BUSCADOR -->
+    <form method="GET" class="mb-3">
+        <input type="text"
+               name="q"
+               class="form-control"
+               placeholder="Buscar por nombre o matrícula..."
+               value="{{ request.GET.q }}">
+    </form>
 
-        {% if perms.alumnos.add_alumno %}
+    <!-- 📊 TABLA -->
+    <div class="table-responsive">
 
-<a href="/alumnos/crear/"
-   class="btn btn-success mb-3">
+        <table class="table align-middle table-hover">
 
-    Agregar Alumno
-
-</a>
-
-{% endif %}
-
-        <a href="/alumnos/exportar-excel/"
-   class="btn btn-success mb-3">
-
-    Exportar Excel
-
-</a>
-
-<a href="/alumnos/importar-excel/"
-   class="btn btn-primary mb-3">
-
-    Importar Excel
-
-</a>
-
-        <table class="table table-hover table-bordered">
-
-            <thead class="table-dark">
-
+            <thead class="text-muted">
                 <tr>
-
                     <th>Matrícula</th>
                     <th>Nombre</th>
                     <th>Correo</th>
                     <th>Carrera</th>
-                    <th>Acciones</th>
-
+                    <th class="text-end">Acciones</th>
                 </tr>
-
             </thead>
 
             <tbody>
 
                 {% for alumno in alumnos %}
-
-                <tr>
+                <tr class="fila-hover">
 
                     <td>{{ alumno.matricula }}</td>
                     <td>{{ alumno.nombre }}</td>
                     <td>{{ alumno.correo }}</td>
                     <td>{{ alumno.carrera }}</td>
 
-                    <td>
+                    <td class="text-end">
 
-                        {% if perms.alumnos.change_alumno %}
+                        <div class="btn-group">
 
+                            <!-- 👁️ VER -->
+                            <a href="/alumnos/detalle/{{ alumno.id }}/"
+                               class="btn btn-outline-secondary btn-sm">
+                                Ver
+                            </a>
+
+                            <!-- ✏️ EDITAR -->
+                            {% if perms.alumnos.change_alumno %}
                             <a href="/alumnos/editar/{{ alumno.id }}/"
-                               class="btn btn-warning btn-sm">
-                            
+                               class="btn btn-outline-warning btn-sm">
                                 Editar
-                            
                             </a>
-                            
                             {% endif %}
 
-                        {% if perms.alumnos.delete_alumno %}
-                            
+                            <!-- 🗑️ ELIMINAR -->
+                            {% if perms.alumnos.delete_alumno %}
                             <a href="/alumnos/eliminar/{{ alumno.id }}/"
-                               class="btn btn-danger btn-sm">
-                            
+                               class="btn btn-outline-danger btn-sm">
                                 Eliminar
-                            
                             </a>
-                            
                             {% endif %}
+
+                            <!-- ➕ CALIFICACIÓN -->
+                            {% if perms.alumnos.add_calificacion %}
+                            <a href="/alumnos/calificaciones/crear/?alumno_id={{ alumno.id }}"
+                               class="btn btn-outline-primary btn-sm">
+                                +
+                            </a>
+                            {% endif %}
+
+                        </div>
 
                     </td>
 
                 </tr>
-
+                {% empty %}
+                <tr>
+                    <td colspan="5" class="text-center text-muted">
+                        No hay alumnos registrados
+                    </td>
+                </tr>
                 {% endfor %}
 
             </tbody>
@@ -129,6 +125,35 @@
 
     </div>
 
+</div>
+
+
+<div class="modal fade" id="modalImportar" tabindex="-1">
+  <div class="modal-dialog">
+    <div class="modal-content">
+
+      <form action="/alumnos/importar-excel/" method="POST" enctype="multipart/form-data">
+        {% csrf_token %}
+
+        <div class="modal-header">
+          <h5 class="modal-title">Importar Excel</h5>
+          <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+        </div>
+
+        <div class="modal-body">
+          <input type="file" name="archivo" class="form-control" required>
+        </div>
+
+        <div class="modal-footer">
+          <button type="submit" class="btn btn-success">
+            Subir archivo
+          </button>
+        </div>
+
+      </form>
+
+    </div>
+  </div>
 </div>
 
 {% endblock %}

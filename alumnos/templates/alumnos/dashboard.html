@@ -2,120 +2,75 @@
 
 {% block content %}
 
-<h1 class="mb-4">
-    Dashboard
-</h1>
+<div class="container">
 
-<div class="row">
+    <!-- 🔥 TÍTULO -->
+    <h3 class="fw-semibold mb-4">
+        📊 Dashboard
+    </h3>
 
-    <!-- CARD TOTAL ALUMNOS -->
+    <!-- 🔹 CARDS -->
+    <div class="row mb-4">
 
-    <div class="col-md-6">
+        <div class="col-md-4">
+            <div class="card p-3 shadow-sm text-center">
+                <small class="text-muted">Total Alumnos</small>
+                <h2 class="fw-bold">{{ total_alumnos }}</h2>
+            </div>
+        </div>
 
-        <div class="card shadow border-0">
+        <div class="col-md-4">
+            <div class="card p-3 shadow-sm text-center">
+                <small class="text-muted">Total Carreras</small>
+                <h2 class="fw-bold">{{ total_carreras }}</h2>
+            </div>
+        </div>
 
-            <div class="card-body">
+        <div class="col-md-4">
+            <div class="card p-3 shadow-sm text-center">
+                <small class="text-muted">Promedio General</small>
 
-                <h5 class="card-title">
-                    Total Alumnos
-                </h5>
-
-                <h1>
-                    {{ total_alumnos }}
-                </h1>
+                {% if promedio_general %}
+                <h2 class="fw-bold">
+                    {{ promedio_general|floatformat:2 }}
+                </h2>
+                {% else %}
+                <h5 class="text-muted">Sin datos</h5>
+                {% endif %}
 
             </div>
-
         </div>
 
     </div>
 
-    <!-- CARD TOTAL CARRERAS -->
+    <!-- 🔹 GRÁFICA -->
+    <div class="card p-4 shadow-sm">
 
-    <div class="col-md-6">
+        <h5 class="mb-3">Alumnos por carrera</h5>
 
-        <div class="card shadow border-0">
-
-            <div class="card-body">
-
-                <h5 class="card-title">
-                    Total Carreras
-                </h5>
-
-                <h1>
-                    {{ total_carreras }}
-                </h1>
-
-            </div>
-
-        </div>
+        <canvas id="grafica"></canvas>
 
     </div>
 
 </div>
 
-<!-- GRAFICA -->
-
-<div class="card shadow border-0 mt-4">
-
-    <div class="card-body">
-
-        <h4 class="mb-4">
-
-            Alumnos por Carrera
-
-        </h4>
-
-        <canvas id="graficaCarreras"></canvas>
-
-    </div>
-
-</div>
-
-<!-- CHART JS -->
-
+<!-- 🔥 CHART -->
 <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
 
 <script>
+const ctx = document.getElementById('grafica');
 
-    const ctx = document.getElementById(
-        'graficaCarreras'
-    );
-
-    new Chart(ctx, {
-
-        type: 'bar',
-
-        data: {
-
-            labels: {{ labels|safe }},
-
-            datasets: [{
-
-                label: 'Alumnos',
-
-                data: {{ data|safe }},
-
-                borderWidth: 1
-
-            }]
-        },
-
-        options: {
-
-            responsive: true,
-
-            scales: {
-
-                y: {
-
-                    beginAtZero: true
-
-                }
-            }
-        }
-    });
-
+new Chart(ctx, {
+    type: 'bar',
+    data: {
+        labels: {{ labels|safe }},
+        datasets: [{
+            label: 'Alumnos',
+            data: {{ data|safe }},
+            borderWidth: 1
+        }]
+    }
+});
 </script>
 
 {% endblock %}

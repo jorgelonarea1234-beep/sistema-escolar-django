@@ -1,0 +1,37 @@
+{% extends 'base.html' %}
+
+{% block content %}
+
+<div class="card p-4 shadow-sm" style="max-width: 500px; margin:auto;">
+
+    <h4 class="mb-4 text-center">
+        Nueva Materia
+    </h4>
+
+    <form method="POST">
+        {% csrf_token %}
+
+        <div class="mb-3">
+            <label class="form-label">Nombre</label>
+            {{ form.nombre }}
+        </div>
+
+        <div class="mb-3">
+            <label class="form-label">Profesor</label>
+            {{ form.profesor }}
+        </div>
+
+        <div class="mb-3">
+            <label class="form-label">Clave</label>
+            {{ form.clave }}
+        </div>
+
+        <button class="btn btn-dark w-100">
+            Guardar
+        </button>
+
+    </form>
+
+</div>
+
+{% endblock %}

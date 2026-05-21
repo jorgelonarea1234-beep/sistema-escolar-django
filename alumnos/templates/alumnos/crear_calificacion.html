@@ -1,0 +1,44 @@
+{% extends 'base.html' %}
+
+{% block content %}
+
+<div class="card p-4 shadow-sm" style="max-width: 500px; margin:auto;">
+
+    <h4 class="mb-4 text-center">
+        Nueva Calificación
+    </h4>
+
+    <form method="POST">
+        {% csrf_token %}
+
+        <!-- 🔹 ALUMNO (BLOQUEADO) -->
+        <div class="mb-3">
+            <label class="form-label">Alumno</label>
+            <input type="text"
+                   class="form-control"
+                   value="{{ alumno.nombre }}"
+                   disabled>
+        </div>
+
+        <!-- 🔹 MATERIA -->
+        <div class="mb-3">
+            <label class="form-label">Materia</label>
+            {{ form.materia }}
+        </div>
+
+        <!-- 🔹 CALIFICACIÓN -->
+        <div class="mb-3">
+            <label class="form-label">Calificación</label>
+            {{ form.calificacion }}
+        </div>
+
+        <!-- 🔹 BOTÓN -->
+        <button class="btn btn-dark w-100">
+            Guardar
+        </button>
+
+    </form>
+
+</div>
+
+{% endblock %}

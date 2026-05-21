@@ -28,5 +28,14 @@ urlpatterns = [
     path(
     'importar-excel/',
     views.importar_excel,
-    name='importar_excel'),     
+    name='importar_excel'), 
+
+
+    path('materias/', views.lista_materias, name='lista_materias'),
+    path('materias/crear/', views.crear_materia, name='crear_materia'),   
+    path('detalle/<int:id>/', views.detalle_alumno, name='detalle_alumno'), 
+    path('calificaciones/crear/', views.crear_calificacion, name='crear_calificacion'),
+    path('boleta/pdf/<int:id>/', views.generar_pdf, name='generar_pdf'),
+    path('calificaciones/editar/<int:id>/', views.editar_calificacion, name='editar_calificacion'),
+    path('calificaciones/eliminar/<int:id>/', views.eliminar_calificacion, name='eliminar_calificacion'),
 ]

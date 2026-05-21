@@ -1,0 +1,58 @@
+{% extends 'base.html' %}
+
+{% block content %}
+
+<div class="card p-4 shadow-sm">
+
+    <!-- 🔥 HEADER -->
+    <div class="d-flex justify-content-between align-items-center mb-3">
+
+        <h4 class="mb-0 fw-semibold">
+            📚 Materias
+        </h4>
+
+        {% if perms.alumnos.add_materia %}
+        <a href="/alumnos/materias/crear/"
+           class="btn btn-dark btn-sm px-3">
+            + Nueva
+        </a>
+        {% endif %}
+
+    </div>
+
+    <!-- 🔹 TABLA -->
+    <div class="table-responsive">
+
+        <table class="table align-middle table-hover">
+
+            <thead class="text-muted">
+                <tr>
+                    <th>Nombre</th>
+                </tr>
+            </thead>
+
+            <tbody>
+
+                {% for materia in materias %}
+                <tr class="fila-hover">
+                    <td class="fw-semibold text-dark">
+                        {{ materia.nombre }}
+                    </td>
+                </tr>
+                {% empty %}
+                <tr>
+                    <td class="text-center text-muted">
+                        No hay materias registradas
+                    </td>
+                </tr>
+                {% endfor %}
+
+            </tbody>
+
+        </table>
+
+    </div>
+
+</div>
+
+{% endblock %}
