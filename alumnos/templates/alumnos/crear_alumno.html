@@ -10,9 +10,9 @@
         {% csrf_token %}
 
         <div class="mb-3">
-            <label class="form-label">Matrícula</label>
-            {{ form.matricula }}
-        </div>
+    <label class="form-label">Matrícula</label>
+    <input type="text" class="form-control" value="Se genera automáticamente" disabled>
+</div>
 
         <div class="mb-3">
             <label class="form-label">Nombre</label>
@@ -20,7 +20,7 @@
         </div>
 
         <div class="mb-3">
-    <label class="form-label">Usuario</label>
+    
     {{ form.username }}
 </div>
 
@@ -40,9 +40,9 @@
         </div>
 
         <div class="mb-3">
-            <label class="form-label">Materias</label>
-            {{ form.materias }}
-        </div>
+    <label class="form-label">Materias</label>
+    {{ form.materias }}
+</div>
 
         <button class="btn btn-dark w-100">
             Guardar

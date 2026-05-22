@@ -14,6 +14,9 @@ from reportlab.platypus import SimpleDocTemplate, Table, TableStyle, Paragraph
 from reportlab.lib import colors
 from reportlab.lib.styles import getSampleStyleSheet
 from django.contrib.auth.models import User
+import random
+import string
+from django.db.models import Max
 
 # ===============================
 # 📊 DASHBOARD
@@ -61,38 +64,78 @@ def lista_alumnos(request):
         'alumnos': alumnos
     })
 
+
+
+
+def generar_matricula():
+    ultimo = Alumno.objects.aggregate(Max('matricula'))['matricula__max']
+
+    if ultimo:
+        return int(ultimo) + 1
+    return 1001
+
+
+
 @login_required
 @permission_required('alumnos.add_alumno', raise_exception=True)
+@login_required
 def crear_alumno(request):
 
+    form = AlumnoForm(request.POST or None)
+
+    if 'materias' in form.fields:
+        form.fields['materias'].queryset = Materia.objects.all()
+
     if request.method == 'POST':
-        form = AlumnoForm(request.POST)
-
         if form.is_valid():
-            
-            # 🔥 VALIDAR USUARIO REPETIDO
-            if User.objects.filter(username=form.cleaned_data['username']).exists():
-                form.add_error('username', 'El usuario ya existe')
 
-            # 🔥 CREAR USUARIO
-            user = User.objects.create_user(
-                username=form.cleaned_data['username'],
-                password=form.cleaned_data['password']
-            )
+            nombre = form.cleaned_data['nombre']
+            correo = form.cleaned_data['correo']
 
-            # 🔥 CREAR ALUMNO
-            alumno = form.save(commit=False)
-            alumno.user = user
-            alumno.save()
+            # 🔥 MATRÍCULA AUTOMÁTICA
+            matricula = generar_matricula()
 
-            return redirect('lista_alumnos')
+            # 🔥 USERNAME = CORREO
+            username = correo
 
-    else:
-        form = AlumnoForm()
+            # 🔥 VALIDAR USUARIO DUPLICADO
+            if User.objects.filter(username=username).exists():
+                form.add_error('correo', 'Este correo ya tiene usuario')
+            else:
+
+                # 🔥 PASSWORD AUTOMÁTICO
+                password = form.cleaned_data['password']
+
+                # 🔥 CREAR USUARIO
+                user = User.objects.create_user(
+                    username=username,
+                    email=correo,
+                    password=password
+                )
+
+                # 🔥 CREAR ALUMNO
+                alumno = form.save(commit=False)
+                alumno.user = user
+                alumno.matricula = matricula
+                alumno.save()
+
+                form.save_m2m()
+
+                from django.contrib import messages
+                messages.success(
+                    request,
+                    f"Usuario: {correo} | Contraseña: {password} | Matrícula: {matricula}"
+                )
+
+                return redirect('lista_alumnos')
 
     return render(request, 'alumnos/crear_alumno.html', {
         'form': form
     })
+
+
+
+
 
 @login_required
 @permission_required('alumnos.change_alumno', raise_exception=True)
@@ -102,14 +145,22 @@ def editar_alumno(request, id):
 
     if request.method == 'POST':
         form = AlumnoForm(request.POST, instance=alumno)
+
         if form.is_valid():
             form.save()
-            messages.success(request, 'Alumno actualizado correctamente')
+
+            messages.success(request, "Alumno actualizado correctamente")  # 🔥 AQUÍ
+
             return redirect('lista_alumnos')
+
     else:
         form = AlumnoForm(instance=alumno)
 
-    return render(request, 'alumnos/editar_alumno.html', {'form': form})
+    return render(request, 'alumnos/editar_alumno.html', {
+        'form': form
+    })
+
+
 
 
 @login_required
@@ -181,46 +232,23 @@ def detalle_alumno(request, id=None):
 # ➕ CALIFICACIONES
 # ===============================
 
-@login_required
-@permission_required('alumnos.add_calificacion', raise_exception=True)
-def crear_calificacion(request):
-
-    alumno_id = request.GET.get('alumno_id')
-
-    if not alumno_id:
-        messages.error(request, "Selecciona un alumno primero")
-        return redirect('lista_alumnos')
+def crear_calificacion(request, alumno_id):
 
     alumno = Alumno.objects.get(id=alumno_id)
 
+    # 🔥 AQUÍ VA
+    print("MATERIAS DEL ALUMNO:", alumno.materias.all())
+
+
+    form = CalificacionForm(request.POST or None)
+    form.fields['materia'].queryset = alumno.materias.all()
+
     if request.method == 'POST':
-        form = CalificacionForm(request.POST)
-
         if form.is_valid():
-
-            materia = form.cleaned_data['materia']
-            nueva_calificacion = form.cleaned_data['calificacion']
-
-            existente = Calificacion.objects.filter(
-                alumno=alumno,
-                materia=materia
-            ).first()
-
-            if existente:
-                existente.calificacion = nueva_calificacion
-                existente.save()
-                messages.success(request, "Calificación actualizada correctamente")
-            else:
-                calificacion = form.save(commit=False)
-                calificacion.alumno = alumno
-                calificacion.save()
-                messages.success(request, "Calificación guardada correctamente")
-
+            calificacion = form.save(commit=False)
+            calificacion.alumno = alumno
+            calificacion.save()
             return redirect('detalle_alumno', id=alumno.id)
-
-    else:
-        form = CalificacionForm()
-        form.fields['materia'].queryset = alumno.materias.all()
 
     return render(request, 'alumnos/crear_calificacion.html', {
         'form': form,

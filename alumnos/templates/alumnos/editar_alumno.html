@@ -36,9 +36,35 @@
             {{ form.materias }}
         </div>
 
-        <button class="btn btn-dark w-100">
-            Guardar cambios
+       <button type="button" class="btn btn-dark w-100"
+        data-bs-toggle="modal"
+        data-bs-target="#modalGuardar">
+    Guardar cambios
+</button>
+
+
+<div class="modal fade" id="modalGuardar" tabindex="-1">
+  <div class="modal-dialog">
+    <div class="modal-content p-3">
+
+      <h5>Confirmar cambios</h5>
+      <p>¿Seguro que deseas guardar los cambios?</p>
+
+      <div class="d-flex justify-content-end gap-2">
+        <button class="btn btn-secondary" data-bs-dismiss="modal">
+            Cancelar
         </button>
+
+        <button type="submit" class="btn btn-dark">
+            Sí, guardar
+        </button>
+      </div>
+
+    </div>
+  </div>
+</div>
+
+
 
     </form>
 

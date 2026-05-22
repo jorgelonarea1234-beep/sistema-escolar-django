@@ -14,11 +14,13 @@
         <div class="d-flex gap-2 align-items-start">
 
             <!-- 🔥 IMPORTAR -->
+             {% if perms.alumnos.add_alumno %}
             <button class="btn btn-outline-success btn-sm"
                     data-bs-toggle="modal"
                     data-bs-target="#modalImportar">
                 Importar
             </button>
+            {% endif %}
 
             <!-- 🔥 EXPORTAR -->
             <a href="/alumnos/exportar-excel/"
@@ -91,16 +93,39 @@
                             {% endif %}
 
                             <!-- 🗑️ ELIMINAR -->
-                            {% if perms.alumnos.delete_alumno %}
-                            <a href="/alumnos/eliminar/{{ alumno.id }}/"
-                               class="btn btn-outline-danger btn-sm">
-                                Eliminar
-                            </a>
-                            {% endif %}
+                            <button class="btn btn-danger btn-sm"
+                            data-bs-toggle="modal"
+                            data-bs-target="#modalEliminar{{ alumno.id }}">
+                             Eliminar
+                            </button>
+
+
+<div class="modal fade" id="modalEliminar{{ alumno.id }}" tabindex="-1">
+  <div class="modal-dialog">
+    <div class="modal-content p-3">
+
+      <h5>Confirmar eliminación</h5>
+      <p>¿Seguro que deseas eliminar este alumno?</p>
+
+      <div class="d-flex justify-content-end gap-2">
+        <button class="btn btn-secondary" data-bs-dismiss="modal">Cancelar</button>
+
+        <a href="/alumnos/eliminar/{{ alumno.id }}/"
+           class="btn btn-danger">
+            Eliminar
+        </a>
+      </div>
+
+    </div>
+  </div>
+</div>
+
+
+
 
                             <!-- ➕ CALIFICACIÓN -->
                             {% if perms.alumnos.add_calificacion %}
-                            <a href="/alumnos/calificaciones/crear/?alumno_id={{ alumno.id }}"
+                            <a href="/alumnos/calificaciones/crear/{{ alumno.id }}/"
                                class="btn btn-outline-primary btn-sm">
                                 +
                             </a>
