@@ -38,4 +38,8 @@ urlpatterns = [
     path('boleta/pdf/<int:id>/', views.generar_pdf, name='generar_pdf'),
     path('calificaciones/editar/<int:id>/', views.editar_calificacion, name='editar_calificacion'),
     path('calificaciones/eliminar/<int:id>/', views.eliminar_calificacion, name='eliminar_calificacion'),
-]
+    path('carreras/<int:carrera_id>/materias/', views.asignar_materias_carrera, name='asignar_materias_carrera'),
+    path('carreras/', views.lista_carreras, name='lista_carreras'),
+    path('carreras/crear/', views.crear_carrera, name='crear_carrera'),
+    path('calificaciones/crear_ajax/', views.crear_calificacion_ajax),
+]   

@@ -1,0 +1,24 @@
+{% extends 'base.html' %}
+
+{% block content %}
+
+<div class="card p-4 shadow-sm" style="max-width: 400px; margin:auto;">
+
+    <h4 class="mb-3 text-center">Nueva Carrera</h4>
+
+    <form method="POST">
+        {% csrf_token %}
+
+        <div class="mb-3">
+            <label>Nombre</label>
+            <input type="text" name="nombre" class="form-control">
+        </div>
+
+        <button class="btn btn-dark w-100">
+            Guardar
+        </button>
+    </form>
+
+</div>
+
+{% endblock %}

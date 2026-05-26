@@ -102,13 +102,20 @@
                     </a>
                 </li>
 
+                <li class="nav-item">
+        <a class="nav-link text-white" href="{% url 'lista_carreras' %}">
+            Carreras
+        </a>
+    </li>
+                
+
             </ul>
 
-            <span class="me-3 text-muted">
+           <span class="me-3 text-white" style="color: white;">
                 {{ request.user.username }}
             </span>
 
-            <a href="/logout/" class="btn btn-outline-dark btn-sm">
+            <a href="/logout/" class="btn btn-outline-light btn-sm">
                 Cerrar sesión
             </a>
 

@@ -3,13 +3,12 @@ from django.contrib.auth.decorators import login_required, permission_required
 from django.shortcuts import render, redirect
 from django.http import HttpResponse
 from django.db.models import Count, Avg, Q
-
 from .models import Alumno, Materia, Calificacion
 from .forms import AlumnoForm, MateriaForm, CalificacionForm
-
 import openpyxl
 from openpyxl import load_workbook
-
+from .models import Carrera, Materia
+from django.shortcuts import render, redirect, get_object_or_404
 from reportlab.platypus import SimpleDocTemplate, Table, TableStyle, Paragraph
 from reportlab.lib import colors
 from reportlab.lib.styles import getSampleStyleSheet
@@ -17,10 +16,33 @@ from django.contrib.auth.models import User
 import random
 import string
 from django.db.models import Max
+from django.shortcuts import redirect
+import json
+from django.http import JsonResponse
+from .models import Calificacion, Alumno, Materia
 
 # ===============================
 # 📊 DASHBOARD
 # ===============================
+def crear_calificacion_ajax(request):
+
+    if request.method == 'POST':
+        data = json.loads(request.body)
+
+        alumno = Alumno.objects.get(id=data['alumno'])
+        materia = Materia.objects.get(id=data['materia'])
+        calificacion = data['calificacion']
+
+        Calificacion.objects.create(
+            alumno=alumno,
+            materia=materia,
+            calificacion=calificacion
+        )
+
+        return JsonResponse({'status': 'ok'})
+
+
+
 
 @login_required
 def dashboard(request):
@@ -50,21 +72,55 @@ def dashboard(request):
 # ===============================
 # 👨‍🎓 ALUMNOS
 # ===============================
+@login_required
+def lista_carreras(request):
+    carreras = Carrera.objects.all()
+
+    return render(request, 'alumnos/lista_carreras.html', {
+        'carreras': carreras
+    })
+
 
 @login_required
 def lista_alumnos(request):
 
-    # 🔥 SI ES ALUMNO → SOLO VE UNO
-    if hasattr(request.user, 'alumno'):
-        alumnos = [request.user.alumno]
-    else:
+    if request.user.is_superuser:
         alumnos = Alumno.objects.all()
+    else:
+        alumnos = Alumno.objects.filter(user=request.user)  # 👈 CORRECTO
 
     return render(request, 'alumnos/lista_alumnos.html', {
         'alumnos': alumnos
     })
 
+def crear_carrera(request):
 
+    if request.method == 'POST':
+        nombre = request.POST.get('nombre')
+
+        Carrera.objects.create(nombre=nombre.upper())
+
+        return redirect('lista_carreras')
+
+    return render(request, 'alumnos/crear_carrera.html')
+
+def asignar_materias_carrera(request, carrera_id):
+
+    carrera = get_object_or_404(Carrera, id=carrera_id)
+    materias = Materia.objects.all()
+
+    if request.method == 'POST':
+        materias_ids = request.POST.getlist('materias')
+
+        carrera.materia_set.set(materias_ids)  # 🔥 relación
+
+        return redirect('lista_carreras')  # o donde quieras
+
+    return render(request, 'alumnos/asignar_materias.html', {
+        'carrera': carrera,
+        'materias': materias,
+        'materias_asignadas': carrera.materia_set.all()
+    })
 
 
 def generar_matricula():
@@ -78,62 +134,65 @@ def generar_matricula():
 
 @login_required
 @permission_required('alumnos.add_alumno', raise_exception=True)
-@login_required
 def crear_alumno(request):
 
-    form = AlumnoForm(request.POST or None)
-
-    if 'materias' in form.fields:
-        form.fields['materias'].queryset = Materia.objects.all()
-
     if request.method == 'POST':
+        form = AlumnoForm(request.POST)
+
         if form.is_valid():
 
-            nombre = form.cleaned_data['nombre']
             correo = form.cleaned_data['correo']
-
-            # 🔥 MATRÍCULA AUTOMÁTICA
-            matricula = generar_matricula()
-
-            # 🔥 USERNAME = CORREO
             username = correo
 
             # 🔥 VALIDAR USUARIO DUPLICADO
             if User.objects.filter(username=username).exists():
                 form.add_error('correo', 'Este correo ya tiene usuario')
-            else:
+                return render(request, 'alumnos/crear_alumno.html', {
+                    'form': form
+                })
 
-                # 🔥 PASSWORD AUTOMÁTICO
-                password = form.cleaned_data['password']
+            # 🔥 PASSWORD
+            password = form.cleaned_data['password']
 
-                # 🔥 CREAR USUARIO
-                user = User.objects.create_user(
-                    username=username,
-                    email=correo,
-                    password=password
-                )
+            # 🔥 CREAR USUARIO
+            user = User.objects.create_user(
+                username=username,
+                email=correo,
+                password=password
+            )
 
-                # 🔥 CREAR ALUMNO
-                alumno = form.save(commit=False)
-                alumno.user = user
-                alumno.matricula = matricula
-                alumno.save()
+            # 🔥 CREAR ALUMNO
+            alumno = form.save(commit=False)
+            alumno.user = user
 
-                form.save_m2m()
+            # 🔥 MATRÍCULA AUTOMÁTICA (si aún la usas)
+            alumno.matricula = generar_matricula()
 
-                from django.contrib import messages
-                messages.success(
-                    request,
-                    f"Usuario: {correo} | Contraseña: {password} | Matrícula: {matricula}"
-                )
+            alumno.save()
 
-                return redirect('lista_alumnos')
+            form.save_m2m()
+
+            # 🔥 ASIGNAR MATERIAS AUTOMÁTICAMENTE
+            materias = Materia.objects.filter(carreras=alumno.carrera)
+            alumno.materias.set(materias)
+
+            # 🔥 MENSAJE
+            messages.success(
+                request,
+                f"Usuario: {correo} | Contraseña: {password} | Matrícula: {alumno.matricula}"
+            )
+
+            return redirect('lista_alumnos')
+
+        else:
+            print(form.errors)  # 🔥 DEBUG
+
+    else:
+        form = AlumnoForm()
 
     return render(request, 'alumnos/crear_alumno.html', {
         'form': form
     })
-
-
 
 
 

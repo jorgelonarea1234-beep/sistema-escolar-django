@@ -1,4 +1,5 @@
 {% extends 'base.html' %}
+{% load custom_filters %}
 
 {% block content %}
 
@@ -13,15 +14,7 @@
 
         <div class="d-flex gap-2">
 
-            <a href="/alumnos/calificaciones/crear/{{ alumno.id }}/"
-   class="btn btn-dark btn-sm">
-    + Calificación
-</a>
-
-            <a href="/alumnos/boleta/pdf/{{ alumno.id }}/"
-               class="btn btn-outline-danger btn-sm">
-                PDF
-            </a>
+            
 
         </div>
 
@@ -51,10 +44,16 @@
 
     </div>
 
-    <!-- 🔹 TABLA -->
+    <!-- 🔹 TABLA PRO -->
+
+    <a href="/alumnos/boleta/pdf/{{ alumno.id }}/"
+               class="btn btn-outline-danger btn-sm">
+                PDF
+            </a>
     <div class="card p-3 shadow-sm mb-4">
 
         <h5 class="mb-3">Calificaciones</h5>
+        
 
         <table class="table table-hover align-middle">
 
@@ -68,52 +67,60 @@
 
             <tbody>
 
-                {% for c in calificaciones %}
+                {% for materia in alumno.materias.all %}
                 <tr>
 
-                    <td>{{ c.materia.nombre }}</td>
+                    <td>{{ materia.nombre }}</td>
 
-                  
-                     
-                        <td class="
-    {% if c.calificacion >= 70 %}
-        text-success fw-bold
-    {% else %}
-        text-danger fw-bold
-    {% endif %}
-">
-    {{ c.calificacion }}
-</td>
+                    {% with cal=calificaciones|get_calificacion:materia.id %}
 
-                    
+                    <td class="
+                        {% if cal and cal.calificacion >= 70 %}
+                            text-success fw-bold
+                        {% elif cal %}
+                            text-danger fw-bold
+                        {% endif %}
+                    ">
+                        {{ cal.calificacion|default:"-" }}
+                    </td>
 
                     <td class="text-end">
 
                         <div class="btn-group">
 
-                            {% if perms.alumnos.change_calificacion %}
-                            <a href="/alumnos/calificaciones/editar/{{ c.id }}/"
-                               class="btn btn-outline-warning btn-sm">
-                                Editar
-                            </a>
-                            {% endif %}
+                            {% if cal %}
+                                {% if perms.alumnos.change_calificacion %}
+                                <a href="/alumnos/calificaciones/editar/{{ cal.id }}/"
+                                   class="btn btn-outline-warning btn-sm">
+                                    Editar
+                                </a>
+                                {% endif %}
 
-                            {% if perms.alumnos.delete_calificacion %}
-                            <a href="/alumnos/calificaciones/eliminar/{{ c.id }}/"
-                               class="btn btn-outline-danger btn-sm">
-                                Eliminar
-                            </a>
+                                {% if perms.alumnos.delete_calificacion %}
+                                <a href="/alumnos/calificaciones/eliminar/{{ cal.id }}/"
+                                   class="btn btn-outline-danger btn-sm">
+                                    Eliminar
+                                </a>
+                                {% endif %}
+
+                            {% else %}
+                               <button class="btn btn-dark btn-sm"
+                                 onclick="abrirModal({{ materia.id }}, '{{ materia.nombre }}')">
+                                + Agregar
+                              </button>
                             {% endif %}
 
                         </div>
 
                     </td>
 
+                    {% endwith %}
+
                 </tr>
                 {% empty %}
                 <tr>
                     <td colspan="3" class="text-center text-muted">
-                        No hay calificaciones
+                        No tiene materias asignadas
                     </td>
                 </tr>
                 {% endfor %}
@@ -156,9 +163,6 @@
 
 </div>
 
-
-
-
 <!-- 🔥 SCRIPT GRÁFICA -->
 <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
 
@@ -185,5 +189,108 @@ new Chart(ctx, {
     }
 });
 </script>
+
+
+
+
+<script>
+
+function abrirModal(materiaId, materiaNombre) {
+
+    document.getElementById('materia_id').value = materiaId;
+    document.getElementById('materia_nombre').value = materiaNombre;
+
+    const modal = new bootstrap.Modal(document.getElementById('modalCalificacion'));
+    modal.show();
+}
+
+
+function guardarCalificacion() {
+
+    const materia = document.getElementById('materia_id').value;
+    const alumno = document.getElementById('alumno_id').value;
+    const calificacion = document.getElementById('calificacion').value;
+
+    fetch('/alumnos/calificaciones/crear_ajax/', {
+        method: 'POST',
+        headers: {
+            'Content-Type': 'application/json',
+            'X-CSRFToken': getCookie('csrftoken')
+        },
+        body: JSON.stringify({
+            alumno: alumno,
+            materia: materia,
+            calificacion: calificacion
+        })
+    })
+    .then(response => response.json())
+    .then(data => {
+        location.reload(); // 🔥 recarga para ver cambios
+    });
+}
+
+
+// 🔥 CSRF
+function getCookie(name) {
+    let cookieValue = null;
+    if (document.cookie) {
+        const cookies = document.cookie.split(';');
+        for (let cookie of cookies) {
+            if (cookie.trim().startsWith(name + '=')) {
+                cookieValue = cookie.split('=')[1];
+            }
+        }
+    }
+    return cookieValue;
+}
+
+</script>
+
+
+
+
+
+
+
+<!-- 🔥 MODAL CALIFICACIÓN -->
+<div class="modal fade" id="modalCalificacion" tabindex="-1">
+  <div class="modal-dialog">
+    <div class="modal-content">
+
+      <div class="modal-header">
+        <h5 class="modal-title">Agregar Calificación</h5>
+        <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+      </div>
+
+      <div class="modal-body">
+
+        <form id="formCalificacion">
+
+          <input type="hidden" id="materia_id">
+          <input type="hidden" id="alumno_id" value="{{ alumno.id }}">
+
+          <div class="mb-3">
+            <label>Materia</label>
+            <input type="text" id="materia_nombre" class="form-control" disabled>
+          </div>
+
+          <div class="mb-3">
+            <label>Calificación</label>
+            <input type="number" id="calificacion" class="form-control" min="0" max="100">
+          </div>
+
+        </form>
+
+      </div>
+
+      <div class="modal-footer">
+        <button class="btn btn-dark" onclick="guardarCalificacion()">Guardar</button>
+      </div>
+
+    </div>
+  </div>
+</div>
+
+
 
 {% endblock %}

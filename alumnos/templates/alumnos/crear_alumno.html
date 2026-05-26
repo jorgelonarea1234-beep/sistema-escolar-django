@@ -9,10 +9,17 @@
     <form method="POST">
         {% csrf_token %}
 
+        <!-- 🔥 MOSTRAR ERRORES -->
+        {% if form.errors %}
+            <div class="alert alert-danger">
+                {{ form.errors }}
+            </div>
+        {% endif %}
+
         <div class="mb-3">
-    <label class="form-label">Matrícula</label>
-    <input type="text" class="form-control" value="Se genera automáticamente" disabled>
-</div>
+            <label class="form-label">Matrícula</label>
+            <input type="text" class="form-control" value="Se genera automáticamente" disabled>
+        </div>
 
         <div class="mb-3">
             <label class="form-label">Nombre</label>
@@ -20,14 +27,9 @@
         </div>
 
         <div class="mb-3">
-    
-    {{ form.username }}
-</div>
-
-<div class="mb-3">
-    <label class="form-label">Contraseña</label>
-    {{ form.password }}
-</div>
+            <label class="form-label">Contraseña</label>
+            {{ form.password }}
+        </div>
 
         <div class="mb-3">
             <label class="form-label">Correo</label>
@@ -39,12 +41,9 @@
             {{ form.carrera }}
         </div>
 
-        <div class="mb-3">
-    <label class="form-label">Materias</label>
-    {{ form.materias }}
-</div>
+        <!-- ❌ QUITAMOS MATERIAS -->
 
-        <button class="btn btn-dark w-100">
+        <button type="submit" class="btn btn-dark w-100">
             Guardar
         </button>
 
