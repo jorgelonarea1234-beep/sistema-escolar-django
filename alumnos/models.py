@@ -3,6 +3,15 @@ from django.contrib.auth.models import User
 
 
 
+class Maestro(models.Model):
+    user = models.OneToOneField(User, on_delete=models.CASCADE)
+    nombre = models.CharField(max_length=100)
+
+    def __str__(self):
+        return self.nombre
+
+
+
 
 class Carrera(models.Model):
     nombre = models.CharField(max_length=100)
@@ -13,19 +22,51 @@ class Carrera(models.Model):
 
 class Materia(models.Model):
     nombre = models.CharField(max_length=100)
-    profesor = models.CharField(max_length=100)
     clave = models.CharField(max_length=20)
-    carreras = models.ManyToManyField(Carrera)  # 🔥 ahora sí funciona
+    carreras = models.ManyToManyField(Carrera)
+    maestro = models.ForeignKey(Maestro, on_delete=models.CASCADE, null=True, blank=True)
 
     def __str__(self):
         return self.nombre
+    
+
 
 class Alumno(models.Model):
+    user = models.OneToOneField(User, on_delete=models.CASCADE, null=True, blank=True)
     nombre = models.CharField(max_length=100)
     correo = models.EmailField()
     carrera = models.ForeignKey(Carrera, on_delete=models.CASCADE)
-    materias = models.ManyToManyField(Materia, blank=True)  # opcional
-    matricula = models.IntegerField(unique=True, null=True, blank=True)
+    materias = models.ManyToManyField(Materia, blank=True)
+
+    matricula = models.CharField(
+        max_length=20,
+        unique=True,
+        blank=True,
+        null=True  # 🔥 CLAVE
+    )
+
+    def generar_matricula(self):
+        ultimo = Alumno.objects.exclude(matricula__isnull=True)\
+                               .exclude(matricula__exact='')\
+                               .order_by('-id')\
+                               .first()
+        
+        if ultimo and '-' in ultimo.matricula:
+            try:
+                numero = int(ultimo.matricula.split('-')[-1]) + 1
+            except:
+                numero = 1
+        else:
+            numero = 1
+
+        return f"ALU-{numero:04d}"
+
+    def save(self, *args, **kwargs):
+        if not self.matricula:
+            self.matricula = self.generar_matricula()
+        super().save(*args, **kwargs)
+
+
 
     
 class Calificacion(models.Model):

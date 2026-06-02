@@ -30,6 +30,23 @@ ALLOWED_HOSTS = ['*']
 
 # Application definition
 
+
+
+MIDDLEWARE = [
+    'django.middleware.security.SecurityMiddleware',
+
+    'django.contrib.sessions.middleware.SessionMiddleware',  # 🔥 CLAVE
+
+    'django.middleware.common.CommonMiddleware',
+    'django.middleware.csrf.CsrfViewMiddleware',
+
+    'django.contrib.auth.middleware.AuthenticationMiddleware',  # 🔥 CLAVE
+
+    'django.contrib.messages.middleware.MessageMiddleware',  # 🔥 ESTE FALTABA
+
+    'django.middleware.clickjacking.XFrameOptionsMiddleware',
+]
+
 INSTALLED_APPS = [
     
     'django.contrib.admin',
@@ -128,6 +145,10 @@ STATIC_URL = 'static/'
 # https://docs.djangoproject.com/en/4.2/ref/settings/#default-auto-field
 
 DEFAULT_AUTO_FIELD = 'django.db.models.BigAutoField'
-LOGIN_URL = '/login/'
+LOGIN_URL = '/'
 LOGIN_REDIRECT_URL = '/alumnos/'
-LOGOUT_REDIRECT_URL = '/login/'
+
+
+SESSION_ENGINE = 'django.contrib.sessions.backends.db'
+
+

@@ -2,48 +2,65 @@
 
 {% block content %}
 
-<div class="card p-4 shadow-sm" style="max-width: 500px; margin:auto;">
+<div class="card shadow-sm p-4 mx-auto" style="max-width: 500px;">
 
-    <h4 class="mb-4 text-center">Nuevo Alumno</h4>
+    <h4 class="text-center mb-4">Nuevo Alumno</h4>
+
+    <!-- MENSAJES -->
+    {% if messages %}
+        {% for message in messages %}
+            <div class="alert 
+                {% if message.tags == 'error' %}
+                    alert-danger
+                {% else %}
+                    alert-success
+                {% endif %}
+            ">
+                {{ message }}
+            </div>
+        {% endfor %}
+    {% endif %}
 
     <form method="POST">
         {% csrf_token %}
 
-        <!-- 🔥 MOSTRAR ERRORES -->
-        {% if form.errors %}
-            <div class="alert alert-danger">
-                {{ form.errors }}
-            </div>
-        {% endif %}
-
+        <!-- MATRÍCULA -->
         <div class="mb-3">
-            <label class="form-label">Matrícula</label>
-            <input type="text" class="form-control" value="Se genera automáticamente" disabled>
-        </div>
+    <label>Matrícula</label>
+    <input class="form-control" value="Se genera automáticamente" disabled>
+</div>
 
+        <!-- NOMBRE -->
         <div class="mb-3">
             <label class="form-label">Nombre</label>
-            {{ form.nombre }}
+            <input type="text" name="nombre" class="form-control" placeholder="Ej. Juan Pérez" required>
         </div>
 
-        <div class="mb-3">
-            <label class="form-label">Contraseña</label>
-            {{ form.password }}
-        </div>
-
+        <!-- CORREO -->
         <div class="mb-3">
             <label class="form-label">Correo</label>
-            {{ form.correo }}
+            <input type="email" name="correo" class="form-control" placeholder="correo@ejemplo.com" required>
         </div>
 
+        <!-- CONTRASEÑA -->
+        <div class="mb-3">
+            <label class="form-label">Contraseña</label>
+            <input type="password" name="password" class="form-control" placeholder="********" required>
+        </div>
+
+        <!-- CARRERA -->
         <div class="mb-3">
             <label class="form-label">Carrera</label>
-            {{ form.carrera }}
+            <select name="carrera" class="form-select" required>
+                <option value="">Selecciona una carrera</option>
+                {% for c in carreras %}
+                    <option value="{{ c.id }}">{{ c.nombre }}</option>
+                {% endfor %}
+            </select>
         </div>
 
-        <!-- ❌ QUITAMOS MATERIAS -->
-
-        <button type="submit" class="btn btn-dark w-100">
+        <!-- BOTÓN -->
+        <button class="btn btn-dark w-100">
             Guardar
         </button>
 

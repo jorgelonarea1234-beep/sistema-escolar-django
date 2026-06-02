@@ -1,0 +1,219 @@
+{% extends 'base.html' %}
+
+{% block content %}
+
+<div class="container">
+
+    <div class="d-flex justify-content-between mb-3">
+        <h4>Maestros</h4>
+
+        <a href="{% url 'crear_maestro' %}" class="btn btn-dark btn-sm">
+            + Nuevo Maestro
+        </a>
+    </div>
+
+    <div class="card p-3 shadow-sm">
+
+        <table class="table table-hover">
+
+            <thead>
+                <tr>
+                    <th>Nombre</th>
+                    <th>Correo</th>
+                    <th>Acciones</th>
+                </tr>
+            </thead>
+
+            <tbody>
+
+                {% for m in maestros %}
+                <tr>
+                    <td>{{ m.nombre }}</td>
+                    <td>{{ m.user.username }}</td>
+                    <td class="text-end">
+
+                        <button class="btn btn-outline-warning btn-sm"
+                            data-id="{{ m.id }}"
+                            data-nombre="{{ m.nombre }}"
+                            onclick="abrirModalEditar(this)">
+                            Editar
+                        </button>
+                    
+                        <button class="btn btn-outline-danger btn-sm"
+                            data-id="{{ m.id }}"
+                            onclick="confirmarEliminar(this)">
+                            Eliminar
+                        </button>
+
+                    </td>
+                </tr>
+                {% endfor %}
+
+            </tbody>
+
+        </table>
+
+    </div>
+
+</div>
+
+<!-- MODAL EDITAR -->
+<div class="modal fade" id="modalMaestro">
+  <div class="modal-dialog">
+    <div class="modal-content">
+
+      <div class="modal-header">
+        <h5 class="modal-title">Maestro</h5>
+        <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+      </div>
+
+      <div class="modal-body">
+        <input type="hidden" id="maestro_id">
+
+        <div class="mb-3">
+            <label>Nombre</label>
+            <input type="text" id="nombre" class="form-control">
+        </div>
+      </div>
+
+      <div class="modal-footer">
+        <button class="btn btn-dark" onclick="guardarMaestro()">Guardar</button>
+      </div>
+
+    </div>
+  </div>
+</div>
+
+<!-- MODAL ELIMINAR -->
+<div class="modal fade" id="modalEliminar">
+  <div class="modal-dialog">
+    <div class="modal-content">
+
+      <div class="modal-header">
+        <h5 class="modal-title">Eliminar Maestro</h5>
+        <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+      </div>
+
+      <div class="modal-body">
+        ¿Estás seguro?
+      </div>
+
+      <div class="modal-footer">
+        <button class="btn btn-secondary" data-bs-dismiss="modal">Cancelar</button>
+        <button class="btn btn-danger" onclick="eliminarMaestro()">Eliminar</button>
+      </div>
+
+    </div>
+  </div>
+</div>
+
+{% endblock %}
+
+
+{% block scripts %}
+<script>
+
+// 🔥 CSRF
+function getCookie(name) {
+    let cookieValue = null;
+    if (document.cookie && document.cookie !== '') {
+        const cookies = document.cookie.split(';');
+        for (let c of cookies) {
+            c = c.trim();
+            if (c.startsWith(name + '=')) {
+                cookieValue = decodeURIComponent(c.substring(name.length + 1));
+            }
+        }
+    }
+    return cookieValue;
+}
+
+let maestroAEliminar = null;
+let botonEliminar = null;
+
+// ================= EDITAR =================
+function abrirModalEditar(btn) {
+    document.getElementById('maestro_id').value = btn.dataset.id;
+    document.getElementById('nombre').value = btn.dataset.nombre;
+    new bootstrap.Modal(document.getElementById('modalMaestro')).show();
+}
+
+function guardarMaestro() {
+
+    const id = document.getElementById('maestro_id').value;
+    const nombre = document.getElementById('nombre').value;
+
+    const url = id
+        ? '/alumnos/maestros/editar_ajax/'
+        : '/alumnos/maestros/crear_ajax/';
+
+    fetch(url, {
+        method: 'POST',
+        headers: {
+            'Content-Type': 'application/json',
+            'X-CSRFToken': getCookie('csrftoken')
+        },
+        body: JSON.stringify({ id, nombre })
+    })
+    .then(res => res.json())
+    .then(() => {
+        mostrarToast("Maestro actualizado correctamente");
+        setTimeout(() => location.reload(), 800);
+    });
+}
+
+// ================= ELIMINAR =================
+function confirmarEliminar(btn) {
+    maestroAEliminar = btn.dataset.id;
+    botonEliminar = btn;
+    new bootstrap.Modal(document.getElementById('modalEliminar')).show();
+}
+
+function eliminarMaestro() {
+
+    fetch('/alumnos/maestros/eliminar_ajax/', {
+        method: 'POST',
+        headers: {
+            'Content-Type': 'application/json',
+            'X-CSRFToken': getCookie('csrftoken')
+        },
+        body: JSON.stringify({ id: maestroAEliminar })
+    })
+    .then(res => res.json())
+    .then(() => {
+
+        mostrarToast("Maestro eliminado correctamente", "danger");
+
+        // 🔥 cerrar modal
+        const modal = bootstrap.Modal.getInstance(document.getElementById('modalEliminar'));
+        modal.hide();
+
+        // 🔥 eliminar fila con animación
+        const fila = botonEliminar.closest('tr');
+        fila.style.transition = "0.3s";
+        fila.style.opacity = "0";
+
+        setTimeout(() => fila.remove(), 300);
+    });
+}
+
+// ================= TOAST =================
+function mostrarToast(mensaje, tipo="success") {
+
+    const toast = document.createElement('div');
+
+    toast.className = `toast align-items-center text-bg-${tipo} border-0 show mb-2`;
+    toast.innerHTML = `
+        <div class="d-flex">
+            <div class="toast-body">${mensaje}</div>
+            <button type="button" class="btn-close btn-close-white me-2 m-auto"></button>
+        </div>
+    `;
+
+    document.getElementById('toast-container').appendChild(toast);
+
+    setTimeout(() => toast.remove(), 3000);
+}
+
+</script>
+{% endblock %}

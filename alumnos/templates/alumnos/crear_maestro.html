@@ -1,0 +1,60 @@
+{% extends 'base.html' %}
+
+{% block content %}
+
+<div class="container d-flex justify-content-center">
+
+    <div class="card p-4 shadow-sm mt-4" style="max-width: 500px; width:100%; border-radius:12px;">
+
+        <h4 class="mb-4 text-center fw-semibold">
+            Nuevo Maestro
+        </h4>
+
+        <!-- 🔥 MENSAJES -->
+      
+
+        <!-- 🔥 FORM -->
+        <form method="POST">
+            {% csrf_token %}
+
+            <div class="mb-3">
+                <label class="form-label">Nombre</label>
+                <input 
+                    type="text" 
+                    name="nombre" 
+                    class="form-control" 
+                    placeholder="Ej. Juan Pérez"
+                    required>
+            </div>
+
+            <div class="mb-3">
+                <label class="form-label">Correo</label>
+                <input 
+                    type="email" 
+                    name="correo" 
+                    class="form-control" 
+                    placeholder="correo@ejemplo.com"
+                    required>
+            </div>
+
+            <div class="mb-3">
+                <label class="form-label">Contraseña</label>
+                <input 
+                    type="password" 
+                    name="password" 
+                    class="form-control" 
+                    placeholder="********"
+                    required>
+            </div>
+
+            <button class="btn btn-dark w-100 py-2 fw-semibold">
+                Guardar
+            </button>
+
+        </form>
+
+    </div>
+
+</div>
+
+{% endblock %}

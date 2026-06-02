@@ -4,55 +4,151 @@
 
 <div class="card p-4 shadow-sm">
 
-    <!-- 🔥 HEADER -->
     <div class="d-flex justify-content-between align-items-center mb-3">
-
-        <h4 class="mb-0 fw-semibold">
-            📚 Materias
-        </h4>
-
-        {% if perms.alumnos.add_materia %}
-        <a href="/alumnos/materias/crear/"
-           class="btn btn-dark btn-sm px-3">
-            + Nueva
-        </a>
-        {% endif %}
-
+        <h4>Materias</h4>
+        <a href="{% url 'crear_materia' %}" class="btn btn-dark">+ Nueva</a>
     </div>
 
-    <!-- 🔹 TABLA -->
-    <div class="table-responsive">
+    <table class="table table-hover">
+        <thead>
+            <tr>
+                <th>Nombre</th>
+                <th>Acciones</th>
+            </tr>
+        </thead>
 
-        <table class="table align-middle table-hover">
+        <tbody>
+            {% for materia in materias %}
+            <tr>
 
-            <thead class="text-muted">
-                <tr>
-                    <th>Nombre</th>
-                </tr>
-            </thead>
+                <td>{{ materia.nombre }}</td>
 
-            <tbody>
+                <td>
+                    <!-- ✏️ EDITAR -->
+                    {% if request.user.is_superuser %}
+                    <button 
+                        class="btn btn-warning btn-sm"
+                        onclick="abrirModalEditar({{ materia.id }})">
+                        Editar
+                    </button>
+                    {% endif %}
 
-                {% for materia in materias %}
-                <tr class="fila-hover">
-                    <td class="fw-semibold text-dark">
-                        {{ materia.nombre }}
-                    </td>
-                </tr>
-                {% empty %}
-                <tr>
-                    <td class="text-center text-muted">
-                        No hay materias registradas
-                    </td>
-                </tr>
-                {% endfor %}
+                    <!-- 🗑️ ELIMINAR -->
+                    {% if request.user.is_superuser %}
+                    <button 
+                        class="btn btn-danger btn-sm"
+                        data-bs-toggle="modal"
+                        data-bs-target="#modalEliminar{{ materia.id }}">
+                        Eliminar
+                    </button>
+                    {% endif %}
+                </td>
 
-            </tbody>
-
-        </table>
-
-    </div>
+            </tr>
+            {% empty %}
+            <tr>
+                <td colspan="2">No hay materias</td>
+            </tr>
+            {% endfor %}
+        </tbody>
+    </table>
 
 </div>
+
+<!-- 🔥 MODAL EDITAR GLOBAL -->
+<div class="modal fade" id="modalEditar" tabindex="-1">
+  <div class="modal-dialog">
+    <div class="modal-content" id="contenidoModalEditar">
+        <!-- aquí se carga el form -->
+    </div>
+  </div>
+</div>
+
+<!-- 🗑️ MODALES ELIMINAR -->
+{% for materia in materias %}
+<div class="modal fade" id="modalEliminar{{ materia.id }}" tabindex="-1">
+  <div class="modal-dialog">
+    <div class="modal-content">
+
+      <div class="modal-header">
+        <h5 class="modal-title">Eliminar Materia</h5>
+        <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+      </div>
+
+      <div class="modal-body">
+        ¿Seguro que quieres eliminar <b>{{ materia.nombre }}</b>?
+      </div>
+
+      <div class="modal-footer">
+        <button class="btn btn-secondary" data-bs-dismiss="modal">Cancelar</button>
+
+        <a href="{% url 'eliminar_materia' materia.id %}" class="btn btn-danger">
+            Sí, eliminar
+        </a>
+      </div>
+
+    </div>
+  </div>
+</div>
+{% endfor %}
+
+{% endblock %}
+
+{% block scripts %}
+
+
+
+<script>
+// 🔥 ABRIR MODAL
+function abrirModalEditar(id){
+
+    fetch(`/alumnos/materias/editar/${id}/`)
+    .then(res => res.text())
+    .then(html => {
+        document.getElementById('contenidoModalEditar').innerHTML = html;
+        new bootstrap.Modal(document.getElementById('modalEditar')).show();
+    });
+
+}
+
+// 🔐 CSRF
+function getCookie(name) {
+    let cookieValue = null;
+    if (document.cookie && document.cookie !== '') {
+        let cookies = document.cookie.split(';');
+        for (let i = 0; i < cookies.length; i++) {
+            let cookie = cookies[i].trim();
+            if (cookie.startsWith(name + '=')) {
+                cookieValue = cookie.substring(name.length + 1);
+                break;
+            }
+        }
+    }
+    return cookieValue;
+}
+
+// 💾 GUARDAR (🔥 ESTE ES EL BUENO)
+function guardarMateria(e, id){
+    e.preventDefault();
+
+    let form = e.target;
+
+    fetch(`/alumnos/materias/editar/${id}/`, {
+        method: 'POST',
+        body: new FormData(form),
+        headers: {
+            'X-CSRFToken': getCookie('csrftoken')
+        }
+    })
+    .then(res => res.json())
+    .then(data => {
+        if(data.success){
+            location.reload();
+        }
+    });
+}
+
+</script>
+
 
 {% endblock %}

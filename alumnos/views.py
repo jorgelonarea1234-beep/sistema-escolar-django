@@ -20,26 +20,321 @@ from django.shortcuts import redirect
 import json
 from django.http import JsonResponse
 from .models import Calificacion, Alumno, Materia
+from .forms import MaestroForm
+from .models import Maestro
+from django.contrib.auth import authenticate, login
+from django.contrib.auth.models import User
+from django.contrib import messages
 
-# ===============================
-# 📊 DASHBOARD
-# ===============================
-def crear_calificacion_ajax(request):
+from django.contrib.auth import authenticate, login
+from django.contrib import messages
+
+from django.contrib.auth import authenticate, login, logout
+from django.shortcuts import render, redirect
+from django.contrib import messages
+from django.shortcuts import get_object_or_404
+from django.contrib.auth.decorators import permission_required
+
+from django.contrib.auth.decorators import user_passes_test
+from django.shortcuts import get_object_or_404, redirect
+
+
+@login_required
+def editar_carrera(request, id):
+
+    carrera = get_object_or_404(Carrera, id=id)
 
     if request.method == 'POST':
-        data = json.loads(request.body)
+        nombre = request.POST.get('nombre')
 
-        alumno = Alumno.objects.get(id=data['alumno'])
-        materia = Materia.objects.get(id=data['materia'])
-        calificacion = data['calificacion']
+        print("NUEVO NOMBRE:", nombre)  # 🔥 DEBUG
 
-        Calificacion.objects.create(
-            alumno=alumno,
-            materia=materia,
-            calificacion=calificacion
+        carrera.nombre = nombre
+        carrera.save()
+
+        return JsonResponse({'success': True})
+
+    return render(request, 'alumnos/editar_carrera_modal.html', {
+        'carrera': carrera
+    })
+
+
+def es_admin(user):
+    return user.is_superuser
+
+@user_passes_test(es_admin)
+def eliminar_carrera(request, id):
+
+    carrera = get_object_or_404(Carrera, id=id)
+    carrera.delete()
+
+    return redirect('lista_carreras')
+
+@permission_required('alumnos.delete_materia', raise_exception=True)
+def eliminar_materia(request, id):
+
+    materia = get_object_or_404(Materia, id=id)
+    materia.delete()
+
+    return redirect('lista_materias')
+
+
+
+@login_required
+def editar_materia(request, id):
+
+    materia = get_object_or_404(Materia, id=id)
+
+    if request.method == 'POST':
+        form = MateriaForm(request.POST, instance=materia)
+
+        if form.is_valid():
+            form.save()
+            return JsonResponse({'success': True})
+
+    else:
+        form = MateriaForm(instance=materia)
+
+    return render(request, 'alumnos/editar_materia_modal.html', {
+        'form': form,
+        'materia': materia
+    })
+
+
+
+
+def login_view(request):
+
+    print("ANTES:", request.user.is_authenticated)
+
+    if request.method == 'POST':
+        correo = request.POST.get('correo')
+        password = request.POST.get('password')
+
+        user = authenticate(request, username=correo, password=password)
+
+        print("USER:", user)
+
+        if user is not None:
+            login(request, user)
+
+            print("DESPUÉS:", request.user.is_authenticated)  # 🔥
+
+            return redirect('/alumnos/')
+
+    return render(request, 'registration/login.html')
+
+
+
+def logout_view(request):
+    logout(request)
+    return redirect('login')
+
+
+
+def crear_maestro_ajax(request):
+    import json
+    from django.http import JsonResponse
+    from .models import Maestro
+
+    data = json.loads(request.body)
+
+    Maestro.objects.create(nombre=data['nombre'])
+
+    return JsonResponse({'status': 'ok'})
+
+
+
+
+def editar_maestro_ajax(request):
+    import json
+    from django.http import JsonResponse
+    from .models import Maestro
+
+    data = json.loads(request.body)
+
+    maestro = Maestro.objects.get(id=data['id'])
+    maestro.nombre = data['nombre']
+    maestro.save()
+
+    return JsonResponse({'status': 'ok'})
+
+
+
+
+def eliminar_maestro_ajax(request):
+    import json
+    from django.http import JsonResponse
+    from .models import Maestro
+
+    data = json.loads(request.body)
+    Maestro.objects.get(id=data['id']).delete()
+    return JsonResponse({'status': 'ok'})
+
+def lista_maestros(request):
+
+    maestros = Maestro.objects.all()
+
+    return render(request, 'alumnos/lista_maestros.html', {
+        'maestros': maestros
+    })
+
+
+
+def crear_maestro(request):
+
+    if request.method == 'POST':
+
+        nombre = request.POST.get('nombre')
+        correo = request.POST.get('correo')
+        password = request.POST.get('password')
+
+        # 🔥 VALIDAR CORREO
+        if User.objects.filter(username=correo).exists():
+            messages.error(request, "El correo ya está registrado")
+            return render(request, 'alumnos/crear_maestro.html')
+
+        # 🔥 CREAR USUARIO (CORREGIDO)
+        user = User.objects.create_user(
+            username=correo,
+            email=correo,  # 👈🔥 IMPORTANTE
+            password=password
         )
 
-        return JsonResponse({'status': 'ok'})
+        Maestro.objects.create(user=user, nombre=nombre)
+
+        messages.success(request, "Maestro creado correctamente")
+
+        return redirect('lista_maestros')
+
+    return render(request, 'alumnos/crear_maestro.html')
+
+
+
+
+
+def crear_calificacion_ajax(request):
+    import json
+    from django.http import JsonResponse
+    from .models import Calificacion, Alumno, Materia
+
+    try:
+        data = json.loads(request.body)
+
+        print("DATA RECIBIDA:", data)
+
+        alumno_id = data.get('alumno_id')
+        materia_id = data.get('materia_id')
+        calificacion_val = data.get('calificacion')
+
+        if not alumno_id or not materia_id or not calificacion_val:
+            return JsonResponse({
+                'status': 'error',
+                'mensaje': 'Datos incompletos'
+            })
+
+        try:
+            calificacion = float(calificacion_val)
+        except:
+            return JsonResponse({
+                'status': 'error',
+                'mensaje': 'Calificación inválida'
+            })
+
+        if calificacion < 1 or calificacion > 100:
+            return JsonResponse({
+                'status': 'error',
+                'mensaje': 'Calificación inválida (1-100)'
+            })
+
+        alumno = Alumno.objects.get(id=alumno_id)
+        materia = Materia.objects.get(id=materia_id)
+
+        calificacion_obj, created = Calificacion.objects.update_or_create(
+            alumno=alumno,
+            materia=materia,
+            defaults={'calificacion': calificacion}
+        )
+        
+        return JsonResponse({
+            'status': 'ok',
+            'id': calificacion_obj.id  # 🔥 ESTE ES EL ID REAL
+        })
+
+    except Exception as e:
+        print("🔥 ERROR REAL:", str(e))
+        return JsonResponse({
+            'status': 'error',
+            'mensaje': str(e)
+        })
+
+
+
+def guardar_calificacion_ajax(request):
+    import json
+    from django.http import JsonResponse
+    from .models import Calificacion, Materia, Alumno
+
+    data = json.loads(request.body)
+
+    calificacion = int(data['calificacion'])
+
+    # 🔥 VALIDACIÓN AQUÍ 👇
+    if calificacion < 1 or calificacion > 100:
+        return JsonResponse({
+            'status': 'error',
+            'mensaje': 'Calificación inválida (1-100)'
+        })
+
+    # 🔥 GUARDAR
+    materia = Materia.objects.get(id=data['materia_id'])
+    alumno = Alumno.objects.get(id=data['alumno_id'])
+
+    Calificacion.objects.update_or_create(
+        alumno=alumno,
+        materia=materia,
+        defaults={'calificacion': calificacion}
+    )
+
+    return JsonResponse({'status': 'ok'})
+
+
+
+
+
+
+def editar_calificacion_ajax(request):
+    import json
+    from django.http import JsonResponse
+    from .models import Calificacion
+
+    data = json.loads(request.body)
+
+    cal = Calificacion.objects.get(id=data['id'])
+
+    # 🔥 VALIDACIÓN DE SEGURIDAD
+    if hasattr(request.user, 'maestro'):
+        if cal.materia.maestro != request.user.maestro:
+            return JsonResponse({'error': 'No autorizado'}, status=403)
+
+    # 🔥 ACTUALIZAR
+    cal.calificacion = data['calificacion']
+    cal.save()
+
+    return JsonResponse({'status': 'ok'})
+
+
+def eliminar_calificacion_ajax(request):
+    import json
+    from django.http import JsonResponse
+    from .models import Calificacion
+
+    data = json.loads(request.body)
+
+    cal = Calificacion.objects.get(id=data['id'])
+    cal.delete()
+
+    return JsonResponse({'status': 'ok'})
 
 
 
@@ -84,14 +379,33 @@ def lista_carreras(request):
 @login_required
 def lista_alumnos(request):
 
-    if request.user.is_superuser:
+    user = request.user
+
+    # 👑 ADMIN
+    if user.is_superuser:
         alumnos = Alumno.objects.all()
+
+    # 👨‍🏫 MAESTRO
+    elif hasattr(user, 'maestro'):
+        alumnos = Alumno.objects.filter(
+            materias__maestro__user=user
+        ).distinct()
+
+    # 👨‍🎓 ALUMNO
+    elif hasattr(user, 'alumno'):
+        alumnos = Alumno.objects.filter(
+            id=user.alumno.id
+        )
+
+    # 🔒 OTROS USUARIOS
     else:
-        alumnos = Alumno.objects.filter(user=request.user)  # 👈 CORRECTO
+        alumnos = Alumno.objects.none()
 
     return render(request, 'alumnos/lista_alumnos.html', {
         'alumnos': alumnos
     })
+
+
 
 def crear_carrera(request):
 
@@ -123,12 +437,21 @@ def asignar_materias_carrera(request, carrera_id):
     })
 
 
-def generar_matricula():
-    ultimo = Alumno.objects.aggregate(Max('matricula'))['matricula__max']
+def generar_matricula(self):
+    ultimo = Alumno.objects.exclude(matricula__isnull=True)\
+                           .exclude(matricula__exact='')\
+                           .order_by('-id')\
+                           .first()
+    
+    if ultimo and '-' in ultimo.matricula:
+        try:
+            numero = int(ultimo.matricula.split('-')[-1]) + 1
+        except:
+            numero = 1
+    else:
+        numero = 1
 
-    if ultimo:
-        return int(ultimo) + 1
-    return 1001
+    return f"ALU-{numero:04d}"
 
 
 
@@ -136,63 +459,46 @@ def generar_matricula():
 @permission_required('alumnos.add_alumno', raise_exception=True)
 def crear_alumno(request):
 
+    carreras = Carrera.objects.all()
+
     if request.method == 'POST':
-        form = AlumnoForm(request.POST)
+        nombre = request.POST.get('nombre')
+        correo = request.POST.get('correo')
+        password = request.POST.get('password')
+        carrera_id = request.POST.get('carrera')
 
-        if form.is_valid():
+        # 🔥 validar usuario
+        if User.objects.filter(username=correo).exists():
+            messages.error(request, "El correo ya está registrado")
+            return redirect('crear_alumno')
 
-            correo = form.cleaned_data['correo']
-            username = correo
+        # 🔥 crear usuario
+        user = User.objects.create_user(
+            username=correo,
+            email=correo,
+            password=password
+        )
 
-            # 🔥 VALIDAR USUARIO DUPLICADO
-            if User.objects.filter(username=username).exists():
-                form.add_error('correo', 'Este correo ya tiene usuario')
-                return render(request, 'alumnos/crear_alumno.html', {
-                    'form': form
-                })
+        # 🔥 obtener carrera
+        carrera = Carrera.objects.get(id=carrera_id)
 
-            # 🔥 PASSWORD
-            password = form.cleaned_data['password']
+        # 🔥 crear alumno
+        Alumno.objects.create(
+            nombre=nombre,
+            correo=correo,
+            carrera=carrera,
+            user=user
+        )
 
-            # 🔥 CREAR USUARIO
-            user = User.objects.create_user(
-                username=username,
-                email=correo,
-                password=password
-            )
-
-            # 🔥 CREAR ALUMNO
-            alumno = form.save(commit=False)
-            alumno.user = user
-
-            # 🔥 MATRÍCULA AUTOMÁTICA (si aún la usas)
-            alumno.matricula = generar_matricula()
-
-            alumno.save()
-
-            form.save_m2m()
-
-            # 🔥 ASIGNAR MATERIAS AUTOMÁTICAMENTE
-            materias = Materia.objects.filter(carreras=alumno.carrera)
-            alumno.materias.set(materias)
-
-            # 🔥 MENSAJE
-            messages.success(
-                request,
-                f"Usuario: {correo} | Contraseña: {password} | Matrícula: {alumno.matricula}"
-            )
-
-            return redirect('lista_alumnos')
-
-        else:
-            print(form.errors)  # 🔥 DEBUG
-
-    else:
-        form = AlumnoForm()
+        messages.success(request, "Alumno creado correctamente")
+        return redirect('lista_alumnos')
 
     return render(request, 'alumnos/crear_alumno.html', {
-        'form': form
+        'carreras': carreras
     })
+
+
+
 
 
 
@@ -250,41 +556,48 @@ def crear_materia(request):
 
     if request.method == 'POST':
         form = MateriaForm(request.POST)
+
         if form.is_valid():
-            form.save()
+            materia = form.save(commit=False)
+
+            if hasattr(request.user, 'maestro'):
+                materia.maestro = request.user.maestro
+
+            materia.save()
+            form.save_m2m()
+
             messages.success(request, 'Materia creada correctamente')
             return redirect('lista_materias')
+
     else:
-        form = MateriaForm()
+        form = MateriaForm()  # 🔥 ESTA LÍNEA FALTABA
 
     return render(request, 'alumnos/crear_materia.html', {'form': form})
-
 
 # ===============================
 # 📊 DETALLE + CALIFICACIONES
 # ===============================
-
 @login_required
-def detalle_alumno(request, id=None):
+def detalle_alumno(request, id):
 
-    # 🔥 SI ES ALUMNO → SOLO VE SU INFO
-    if hasattr(request.user, 'alumno'):
-        alumno = request.user.alumno
+    alumno = Alumno.objects.get(id=id)
 
-    else:
-        alumno = Alumno.objects.get(id=id)
+    # 🔥 MATERIAS SEGÚN SU CARRERA
+    materias = Materia.objects.filter(
+        carreras=alumno.carrera
+    )
 
-    calificaciones = Calificacion.objects.filter(alumno=alumno)
-
-    promedio = calificaciones.aggregate(
-        Avg('calificacion')
-    )['calificacion__avg']
+    calificaciones = Calificacion.objects.filter(
+        alumno=alumno
+    )
 
     return render(request, 'alumnos/detalle_alumno.html', {
         'alumno': alumno,
-        'calificaciones': calificaciones,
-        'promedio': promedio
+        'materias': materias,  # 🔥 IMPORTANTE
+        'calificaciones': calificaciones
     })
+
+  
 
 
 # ===============================

@@ -2,17 +2,14 @@
 
 {% block content %}
 
-<div class="container mt-4">
+<div class="card p-4 shadow-sm">
 
-    <div class="d-flex justify-content-between mb-3">
+    <div class="d-flex justify-content-between align-items-center mb-3">
         <h4>Carreras</h4>
-
-        <a href="{% url 'crear_carrera' %}" class="btn btn-dark">
-            Nueva Carrera
-        </a>
+        <a href="{% url 'crear_carrera' %}" class="btn btn-dark">+ Nueva</a>
     </div>
 
-    <table class="table table-bordered">
+    <table class="table table-hover">
         <thead>
             <tr>
                 <th>Nombre</th>
@@ -23,17 +20,131 @@
         <tbody>
             {% for carrera in carreras %}
             <tr>
+
                 <td>{{ carrera.nombre }}</td>
+
                 <td>
-                    <a href="{% url 'asignar_materias_carrera' carrera.id %}" class="btn btn-sm btn-dark">
-                        Materias
-                    </a>
+                    <!-- ✏️ EDITAR -->
+                    <button 
+                        class="btn btn-warning btn-sm"
+                        onclick="abrirModalEditarCarrera({{ carrera.id }})">
+                        Editar
+                    </button>
+
+                    <!-- 🗑️ ELIMINAR -->
+                    {% if request.user.is_superuser %}
+                        <button 
+                            class="btn btn-danger btn-sm"
+                            data-bs-toggle="modal"
+                            data-bs-target="#modalEliminar{{ carrera.id }}">
+                            Eliminar
+                        </button>
+                    {% endif %}
                 </td>
+
+            </tr>
+            {% empty %}
+            <tr>
+                <td colspan="2">No hay carreras</td>
             </tr>
             {% endfor %}
         </tbody>
     </table>
 
 </div>
+
+<!-- 🧠 MODAL EDITAR (GLOBAL) -->
+<div class="modal fade" id="modalEditarCarrera" tabindex="-1">
+  <div class="modal-dialog">
+    <div class="modal-content" id="contenidoModalCarrera">
+        <!-- aquí se carga el form -->
+    </div>
+  </div>
+</div>
+
+<!-- 🗑️ MODALES ELIMINAR -->
+{% for carrera in carreras %}
+<div class="modal fade" id="modalEliminar{{ carrera.id }}" tabindex="-1">
+  <div class="modal-dialog">
+    <div class="modal-content">
+
+      <div class="modal-header">
+        <h5 class="modal-title">Eliminar Carrera</h5>
+        <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+      </div>
+
+      <div class="modal-body">
+        ¿Seguro que quieres eliminar <b>{{ carrera.nombre }}</b>?
+      </div>
+
+      <div class="modal-footer">
+        <button class="btn btn-secondary" data-bs-dismiss="modal">Cancelar</button>
+
+        <a href="{% url 'eliminar_carrera' carrera.id %}" 
+           class="btn btn-danger">
+            Sí, eliminar
+        </a>
+      </div>
+
+    </div>
+  </div>
+</div>
+{% endfor %}
+
+{% endblock %}
+
+{% block scripts %}
+
+<script>
+function abrirModalEditarCarrera(id){
+
+    fetch(`/alumnos/carreras/editar/${id}/`)
+    .then(res => res.text())
+    .then(html => {
+        document.getElementById('contenidoModalCarrera').innerHTML = html;
+        new bootstrap.Modal(document.getElementById('modalEditarCarrera')).show();
+    });
+
+}
+
+// 🔐 CSRF
+function getCookie(name) {
+    let cookieValue = null;
+    if (document.cookie && document.cookie !== '') {
+        let cookies = document.cookie.split(';');
+        for (let i = 0; i < cookies.length; i++) {
+            let cookie = cookies[i].trim();
+            if (cookie.startsWith(name + '=')) {
+                cookieValue = cookie.substring(name.length + 1);
+                break;
+            }
+        }
+    }
+    return cookieValue;
+}
+
+// 💾 GUARDAR
+function guardarCarrera(e, id){
+    e.preventDefault();
+
+    let form = e.target;
+
+    fetch(`/alumnos/carreras/editar/${id}/`, {
+        method: 'POST',
+        body: new FormData(form),
+        headers: {
+            'X-CSRFToken': getCookie('csrftoken')
+        }
+    })
+    .then(res => res.json())
+    .then(data => {
+        if(data.success){
+            location.reload();
+        } else {
+            alert("Error al guardar");
+        }
+    });
+}
+</script>
 
 {% endblock %}
