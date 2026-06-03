@@ -376,34 +376,56 @@ def lista_carreras(request):
     })
 
 
+from django.contrib.auth.decorators import login_required
+from .models import Alumno, Maestro, Materia
+
+
 @login_required
 def lista_alumnos(request):
 
     user = request.user
 
     # 👑 ADMIN
-    if user.is_superuser:
+    if user.is_superuser or user.groups.filter(name='ADMIN').exists():
         alumnos = Alumno.objects.all()
 
     # 👨‍🏫 MAESTRO
-    elif hasattr(user, 'maestro'):
-        alumnos = Alumno.objects.filter(
-            materias__maestro__user=user
-        ).distinct()
+    elif user.groups.filter(name='MAESTRO').exists():
+
+        try:
+            maestro = Maestro.objects.get(user=user)
+
+            materias = Materia.objects.filter(maestro=maestro)
+
+            alumnos = Alumno.objects.filter(
+                materias__in=materias
+            ).distinct()
+
+        except Maestro.DoesNotExist:
+            alumnos = Alumno.objects.none()
 
     # 👨‍🎓 ALUMNO
-    elif hasattr(user, 'alumno'):
-        alumnos = Alumno.objects.filter(
-            id=user.alumno.id
-        )
+    elif user.groups.filter(name='ALUMNO').exists():
 
-    # 🔒 OTROS USUARIOS
+        try:
+            alumno = Alumno.objects.get(user=user)
+
+            alumnos = Alumno.objects.filter(id=alumno.id)
+
+        except Alumno.DoesNotExist:
+            alumnos = Alumno.objects.none()
+
+    # 🔒 OTROS
     else:
         alumnos = Alumno.objects.none()
 
     return render(request, 'alumnos/lista_alumnos.html', {
-        'alumnos': alumnos
+        'alumnos': alumnos,
+        'es_admin': user.is_superuser or user.groups.filter(name='ADMIN').exists(),
+        'es_maestro': user.groups.filter(name='MAESTRO').exists(),
+        'es_alumno': user.groups.filter(name='ALUMNO').exists(),
     })
+
 
 
 
