@@ -37,6 +37,9 @@ from django.contrib.auth.decorators import permission_required
 
 from django.contrib.auth.decorators import user_passes_test
 from django.shortcuts import get_object_or_404, redirect
+from django.contrib.auth.models import Group
+
+
 
 
 @login_required
@@ -324,44 +327,92 @@ def editar_calificacion_ajax(request):
     return JsonResponse({'status': 'ok'})
 
 
+from django.http import JsonResponse
+from .models import Calificacion
+import json
+
 def eliminar_calificacion_ajax(request):
-    import json
-    from django.http import JsonResponse
-    from .models import Calificacion
 
-    data = json.loads(request.body)
+    if request.method == 'POST':
+        try:
+            data = json.loads(request.body)
 
-    cal = Calificacion.objects.get(id=data['id'])
-    cal.delete()
+            cal_id = data.get('id')
 
-    return JsonResponse({'status': 'ok'})
+            if not cal_id:
+                return JsonResponse({'success': False, 'error': 'ID no enviado'})
 
+            cal = Calificacion.objects.filter(id=cal_id).first()
 
+            if not cal:
+                return JsonResponse({'success': False, 'error': 'No existe la calificación'})
+
+            cal.delete()
+
+            return JsonResponse({'success': True})
+
+        except Exception as e:
+            return JsonResponse({'success': False, 'error': str(e)})
+
+    return JsonResponse({'success': False, 'error': 'Método no permitido'})
 
 
 @login_required
 def dashboard(request):
 
-    total_alumnos = Alumno.objects.count()
+    user = request.user
 
-    total_carreras = Alumno.objects.values('carrera').distinct().count()
+    # 👑 ADMIN
+    if user.is_superuser or user.groups.filter(name='admin').exists():
 
-    carreras = Alumno.objects.values('carrera').annotate(total=Count('carrera'))
+        context = {
+            'tipo': 'admin',
+            'total_alumnos': Alumno.objects.count(),
+            'total_maestros': Maestro.objects.count(),
+            'total_materias': Materia.objects.count(),
+        }
 
-    labels = [c['carrera'] for c in carreras]
-    data = [c['total'] for c in carreras]
+    # 👨‍🏫 MAESTRO
+    elif user.groups.filter(name='maestro').exists():
 
-    promedio_general = Calificacion.objects.aggregate(
-        Avg('calificacion')
-    )['calificacion__avg']
+        maestro = Maestro.objects.get(user=user)
 
-    return render(request, 'alumnos/dashboard.html', {
-        'total_alumnos': total_alumnos,
-        'total_carreras': total_carreras,
-        'labels': labels,
-        'data': data,
-        'promedio_general': promedio_general,
-    })
+        materias = Materia.objects.filter(maestro=maestro)
+
+        alumnos = Alumno.objects.filter(
+            materias__maestro=maestro
+        ).distinct()
+
+        context = {
+            'tipo': 'maestro',
+            'materias': materias.count(),
+            'alumnos': alumnos.count(),
+        }
+
+    # 👨‍🎓 ALUMNO
+    elif user.groups.filter(name='alumno').exists():
+
+        alumno = Alumno.objects.get(user=user)
+
+        context = {
+            'tipo': 'alumno',
+            'nombre': alumno.nombre,
+            'matricula': alumno.matricula,
+            'carrera': alumno.carrera.nombre,
+            'materias': alumno.materias.count(),
+        }
+
+    else:
+        context = {'tipo': 'otro'}
+
+
+    context.update({
+    'es_admin': user.is_superuser or user.groups.filter(name='admin').exists(),
+    'es_maestro': user.groups.filter(name='maestro').exists(),
+    'es_alumno': user.groups.filter(name='alumno').exists(),
+})    
+
+    return render(request, 'alumnos/dashboard.html', context)
 
 
 # ===============================
@@ -382,34 +433,30 @@ from .models import Alumno, Maestro, Materia
 
 @login_required
 def lista_alumnos(request):
-
     user = request.user
 
     # 👑 ADMIN
-    if user.is_superuser or user.groups.filter(name='ADMIN').exists():
+    if user.is_superuser or user.groups.filter(name='admin').exists():
         alumnos = Alumno.objects.all()
 
     # 👨‍🏫 MAESTRO
-    elif user.groups.filter(name='MAESTRO').exists():
+    elif user.groups.filter(name='maestro').exists():
 
         try:
             maestro = Maestro.objects.get(user=user)
 
-            materias = Materia.objects.filter(maestro=maestro)
-
             alumnos = Alumno.objects.filter(
-                materias__in=materias
+                materias__maestro=maestro
             ).distinct()
 
         except Maestro.DoesNotExist:
             alumnos = Alumno.objects.none()
 
-    # 👨‍🎓 ALUMNO
-    elif user.groups.filter(name='ALUMNO').exists():
+    # 👨‍🎓 ALUMNO 👇 AQUÍ VA LO TUYO
+    elif user.groups.filter(name='alumno').exists():
 
         try:
             alumno = Alumno.objects.get(user=user)
-
             alumnos = Alumno.objects.filter(id=alumno.id)
 
         except Alumno.DoesNotExist:
@@ -421,9 +468,9 @@ def lista_alumnos(request):
 
     return render(request, 'alumnos/lista_alumnos.html', {
         'alumnos': alumnos,
-        'es_admin': user.is_superuser or user.groups.filter(name='ADMIN').exists(),
-        'es_maestro': user.groups.filter(name='MAESTRO').exists(),
-        'es_alumno': user.groups.filter(name='ALUMNO').exists(),
+        'es_admin': user.is_superuser or user.groups.filter(name='admin').exists(),
+        'es_maestro': user.groups.filter(name='maestro').exists(),
+        'es_alumno': user.groups.filter(name='alumno').exists(),
     })
 
 
@@ -570,6 +617,8 @@ def lista_materias(request):
 
     materias = Materia.objects.all()
     return render(request, 'alumnos/lista_materias.html', {'materias': materias})
+
+
 
 
 @login_required

@@ -42,16 +42,17 @@ class Alumno(models.Model):
         max_length=20,
         unique=True,
         blank=True,
-        null=True  # 🔥 CLAVE
+        null=True
     )
 
     def generar_matricula(self):
+
         ultimo = Alumno.objects.exclude(matricula__isnull=True)\
                                .exclude(matricula__exact='')\
-                               .order_by('-id')\
+                               .order_by('-matricula')\
                                .first()
-        
-        if ultimo and '-' in ultimo.matricula:
+
+        if ultimo:
             try:
                 numero = int(ultimo.matricula.split('-')[-1]) + 1
             except:
@@ -62,7 +63,7 @@ class Alumno(models.Model):
         return f"ALU-{numero:04d}"
 
     def save(self, *args, **kwargs):
-        if not self.matricula:
+        if not self.matricula or self.matricula == '':
             self.matricula = self.generar_matricula()
         super().save(*args, **kwargs)
 

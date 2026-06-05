@@ -2,74 +2,168 @@
 
 {% block content %}
 
-<div class="container">
+<div class="card p-4 shadow-sm">
 
-    <!-- 🔥 TÍTULO -->
-    <h3 class="fw-semibold mb-4">
-        📊 Dashboard
-    </h3>
+    <h3 class="mb-4">Dashboard</h3>
 
-    <!-- 🔹 CARDS -->
-    <div class="row mb-4">
+    <!-- DEBUG -->
+    <h5>Tipo: {{ tipo }}</h5>
+
+    <!-- ========================= -->
+    <!-- 👑 ADMIN -->
+    <!-- ========================= -->
+    {% if tipo == 'admin' %}
+
+    <div class="row mt-4">
 
         <div class="col-md-4">
-            <div class="card p-3 shadow-sm text-center">
-                <small class="text-muted">Total Alumnos</small>
-                <h2 class="fw-bold">{{ total_alumnos }}</h2>
+            <div class="card p-3 text-center shadow-sm">
+                <h5>Alumnos</h5>
+                <h2>{{ total_alumnos }}</h2>
             </div>
         </div>
 
         <div class="col-md-4">
-            <div class="card p-3 shadow-sm text-center">
-                <small class="text-muted">Total Carreras</small>
-                <h2 class="fw-bold">{{ total_carreras }}</h2>
+            <div class="card p-3 text-center shadow-sm">
+                <h5>Maestros</h5>
+                <h2>{{ total_maestros }}</h2>
             </div>
         </div>
 
         <div class="col-md-4">
-            <div class="card p-3 shadow-sm text-center">
-                <small class="text-muted">Promedio General</small>
-
-                {% if promedio_general %}
-                <h2 class="fw-bold">
-                    {{ promedio_general|floatformat:2 }}
-                </h2>
-                {% else %}
-                <h5 class="text-muted">Sin datos</h5>
-                {% endif %}
-
+            <div class="card p-3 text-center shadow-sm">
+                <h5>Materias</h5>
+                <h2>{{ total_materias }}</h2>
             </div>
         </div>
 
     </div>
 
-    <!-- 🔹 GRÁFICA -->
-    <div class="card p-4 shadow-sm">
+    <!-- 🔥 GRÁFICA ADMIN -->
+    <div class="mt-5">
+        <canvas id="graficaAdmin"></canvas>
+    </div>
 
-        <h5 class="mb-3">Alumnos por carrera</h5>
+    {% endif %}
 
-        <canvas id="grafica"></canvas>
+
+    <!-- ========================= -->
+    <!-- 👨‍🏫 MAESTRO -->
+    <!-- ========================= -->
+    {% if tipo == 'maestro' %}
+
+    <div class="row mt-4">
+
+        <div class="col-md-6">
+            <div class="card p-3 text-center shadow-sm">
+                <h5>Mis Materias</h5>
+                <h2>{{ materias }}</h2>
+            </div>
+        </div>
+
+        <div class="col-md-6">
+            <div class="card p-3 text-center shadow-sm">
+                <h5>Mis Alumnos</h5>
+                <h2>{{ alumnos }}</h2>
+            </div>
+        </div>
 
     </div>
+
+    <!-- 🔥 GRÁFICA MAESTRO -->
+    <div class="mt-5">
+        <canvas id="graficaMaestro"></canvas>
+    </div>
+
+    {% endif %}
+
+
+    <!-- ========================= -->
+    <!-- 👨‍🎓 ALUMNO -->
+    <!-- ========================= -->
+    {% if tipo == 'alumno' %}
+
+    <div class="card p-3 mt-4">
+
+        <h5>{{ nombre }}</h5>
+        <p><b>Matrícula:</b> {{ matricula }}</p>
+        <p><b>Carrera:</b> {{ carrera }}</p>
+        <p><b>Materias inscritas:</b> {{ materias }}</p>
+
+    </div>
+
+    <!-- 🔥 GRÁFICA ALUMNO -->
+    <div class="mt-5">
+        <canvas id="graficaAlumno"></canvas>
+    </div>
+
+    {% endif %}
 
 </div>
 
-<!-- 🔥 CHART -->
-<script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+{% endblock %}
+
+
+{% block scripts %}
 
 <script>
-const ctx = document.getElementById('grafica');
+document.addEventListener("DOMContentLoaded", function () {
 
-new Chart(ctx, {
-    type: 'bar',
-    data: {
-        labels: {{ labels|safe }},
-        datasets: [{
-            label: 'Alumnos',
-            data: {{ data|safe }},
-            borderWidth: 1
-        }]
+    // =========================
+    // 👑 ADMIN
+    // =========================
+    const ctxAdmin = document.getElementById('graficaAdmin');
+
+    if (ctxAdmin) {
+        new Chart(ctxAdmin, {
+            type: 'bar',
+            data: {
+                labels: ['Alumnos', 'Maestros', 'Materias'],
+                datasets: [{
+                    label: 'Totales',
+                    data: [{{ total_alumnos|default:0 }}, {{ total_maestros|default:0 }}, {{ total_materias|default:0 }}],
+                    backgroundColor: ['#0d6efd', '#198754', '#ffc107']
+                }]
+            }
+        });
     }
+
+    // =========================
+    // 👨‍🏫 MAESTRO
+    // =========================
+    const ctxMaestro = document.getElementById('graficaMaestro');
+
+    if (ctxMaestro) {
+        new Chart(ctxMaestro, {
+            type: 'doughnut',
+            data: {
+                labels: ['Materias', 'Alumnos'],
+                datasets: [{
+                    data: [{{ materias|default:0 }}, {{ alumnos|default:0 }}],
+                    backgroundColor: ['#0d6efd', '#dc3545']
+                }]
+            }
+        });
+    }
+
+    // =========================
+    // 👨‍🎓 ALUMNO
+    // =========================
+    const ctxAlumno = document.getElementById('graficaAlumno');
+
+    if (ctxAlumno) {
+        new Chart(ctxAlumno, {
+            type: 'pie',
+            data: {
+                labels: ['Materias inscritas'],
+                datasets: [{
+                    data: [{{ materias|default:0 }}],
+                    backgroundColor: ['#198754']
+                }]
+            }
+        });
+    }
+
 });
 </script>
 

@@ -11,6 +11,7 @@ urlpatterns = [
 
     # 📊 DASHBOARD
     path('dashboard/', views.dashboard, name='dashboard'),
+    
 
     # 📥📤 EXCEL
     path('exportar-excel/', views.exportar_excel, name='exportar_excel'),
