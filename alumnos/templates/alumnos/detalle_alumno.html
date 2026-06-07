@@ -24,9 +24,12 @@
                 <small class="text-muted">Carrera</small>
                 <p class="fw-semibold">{{ alumno.carrera }}</p>
             </div>
+
         </div>
     </div>
-
+<a href="{% url 'generar_pdf' alumno.id %}" class="btn btn-danger btn-sm">
+               📄 Descargar boleta
+            </a>
     <!-- TABLA -->
     <div class="card p-3 shadow-sm mb-4">
 

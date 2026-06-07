@@ -33,12 +33,12 @@
 
                     <!-- 🗑️ ELIMINAR -->
                     {% if request.user.is_superuser %}
-                        <button 
-                            class="btn btn-danger btn-sm"
-                            data-bs-toggle="modal"
-                            data-bs-target="#modalEliminar{{ carrera.id }}">
-                            Eliminar
-                        </button>
+                    <button 
+                        class="btn btn-danger btn-sm"
+                        data-id="{{ carrera.id }}"
+                        onclick="confirmarEliminarCarrera(this)">
+                        Eliminar
+                    </button>
                     {% endif %}
                 </td>
 
@@ -53,18 +53,16 @@
 
 </div>
 
-<!-- 🧠 MODAL EDITAR (GLOBAL) -->
-<div class="modal fade" id="modalEditarCarrera" tabindex="-1">
+<!-- 🧠 MODAL EDITAR -->
+<div class="modal fade" id="modalEditarCarrera">
   <div class="modal-dialog">
     <div class="modal-content" id="contenidoModalCarrera">
-        <!-- aquí se carga el form -->
     </div>
   </div>
 </div>
 
-<!-- 🗑️ MODALES ELIMINAR -->
-{% for carrera in carreras %}
-<div class="modal fade" id="modalEliminar{{ carrera.id }}" tabindex="-1">
+<!-- 🗑️ MODAL ELIMINAR GLOBAL -->
+<div class="modal fade" id="modalEliminarCarrera">
   <div class="modal-dialog">
     <div class="modal-content">
 
@@ -74,28 +72,25 @@
       </div>
 
       <div class="modal-body">
-        ¿Seguro que quieres eliminar <b>{{ carrera.nombre }}</b>?
+        ¿Seguro que quieres eliminar esta carrera?
       </div>
 
       <div class="modal-footer">
         <button class="btn btn-secondary" data-bs-dismiss="modal">Cancelar</button>
-
-        <a href="{% url 'eliminar_carrera' carrera.id %}" 
-           class="btn btn-danger">
-            Sí, eliminar
-        </a>
+        <button class="btn btn-danger" onclick="eliminarCarrera()">Eliminar</button>
       </div>
 
     </div>
   </div>
 </div>
-{% endfor %}
 
 {% endblock %}
 
 {% block scripts %}
 
 <script>
+
+// ================= EDITAR =================
 function abrirModalEditarCarrera(id){
 
     fetch(`/alumnos/carreras/editar/${id}/`)
@@ -107,23 +102,96 @@ function abrirModalEditarCarrera(id){
 
 }
 
+
+// ================= ELIMINAR =================
+let carreraAEliminar = null;
+
+function confirmarEliminarCarrera(btn){
+
+    carreraAEliminar = btn.dataset.id;
+
+    new bootstrap.Modal(
+        document.getElementById('modalEliminarCarrera')
+    ).show();
+}
+
+
+function eliminarCarrera(){
+
+    console.log("ID enviado:", carreraAEliminar);
+
+    if(!carreraAEliminar){
+        mostrarToast("Error: no hay ID", "danger");
+        return;
+    }
+
+    fetch('/alumnos/carreras/eliminar_ajax/', {
+        method: 'POST',
+        headers: {
+            'Content-Type': 'application/json',
+            'X-CSRFToken': getCookie('csrftoken')
+        },
+        body: JSON.stringify({
+            id: carreraAEliminar
+        })
+    })
+    .then(res => res.json())
+    .then(data => {
+
+        if(data.success){
+
+            mostrarToast("Carrera eliminada correctamente 🗑️");
+
+            setTimeout(() => location.reload(), 800);
+
+        } else {
+            mostrarToast("Error al eliminar", "danger");
+        }
+
+    });
+}
+
+
 // 🔐 CSRF
 function getCookie(name) {
     let cookieValue = null;
     if (document.cookie && document.cookie !== '') {
         let cookies = document.cookie.split(';');
-        for (let i = 0; i < cookies.length; i++) {
-            let cookie = cookies[i].trim();
+        for (let cookie of cookies) {
+            cookie = cookie.trim();
             if (cookie.startsWith(name + '=')) {
                 cookieValue = cookie.substring(name.length + 1);
-                break;
             }
         }
     }
     return cookieValue;
 }
 
-// 💾 GUARDAR
+
+// ================= TOAST =================
+function mostrarToast(mensaje, tipo="success") {
+
+    const container = document.getElementById('toast-container');
+
+    if(!container) return;
+
+    const toast = document.createElement('div');
+
+    toast.className = `toast align-items-center text-bg-${tipo} border-0 show mb-2`;
+    toast.innerHTML = `
+        <div class="d-flex">
+            <div class="toast-body">${mensaje}</div>
+            <button type="button" class="btn-close btn-close-white me-2 m-auto"></button>
+        </div>
+    `;
+
+    container.appendChild(toast);
+
+    setTimeout(() => toast.remove(), 3000);
+}
+
+
+// ================= GUARDAR =================
 function guardarCarrera(e, id){
     e.preventDefault();
 
@@ -138,13 +206,18 @@ function guardarCarrera(e, id){
     })
     .then(res => res.json())
     .then(data => {
-        if(data.success){
-            location.reload();
-        } else {
-            alert("Error al guardar");
+       if(data.success){
+
+        mostrarToast("Carrera actualizada correctamente ✏️");
+
+        setTimeout(() => location.reload(), 800);
+
+       } else {
+            mostrarToast("Error al guardar", "danger");
         }
     });
 }
+
 </script>
 
 {% endblock %}

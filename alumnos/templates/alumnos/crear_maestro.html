@@ -14,7 +14,7 @@
       
 
         <!-- 🔥 FORM -->
-        <form method="POST">
+        <form method="POST" autocomplete="off">
             {% csrf_token %}
 
             <div class="mb-3">
@@ -34,6 +34,7 @@
                     name="correo" 
                     class="form-control" 
                     placeholder="correo@ejemplo.com"
+                    autocomplete="off"
                     required>
             </div>
 
@@ -44,6 +45,7 @@
                     name="password" 
                     class="form-control" 
                     placeholder="********"
+                    autocomplete="new-password"
                     required>
             </div>
 

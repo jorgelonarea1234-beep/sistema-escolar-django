@@ -25,22 +25,69 @@ from .models import Maestro
 from django.contrib.auth import authenticate, login
 from django.contrib.auth.models import User
 from django.contrib import messages
-
 from django.contrib.auth import authenticate, login
 from django.contrib import messages
-
 from django.contrib.auth import authenticate, login, logout
 from django.shortcuts import render, redirect
 from django.contrib import messages
 from django.shortcuts import get_object_or_404
 from django.contrib.auth.decorators import permission_required
-
 from django.contrib.auth.decorators import user_passes_test
 from django.shortcuts import get_object_or_404, redirect
 from django.contrib.auth.models import Group
+from django.http import JsonResponse
+import json
+from .models import Carrera
+from .models import Materia
 
+def eliminar_materia_ajax(request):
 
+    if request.method == 'POST':
+        try:
+            data = json.loads(request.body)
 
+            materia_id = data.get('id')
+
+            if not materia_id:
+                return JsonResponse({
+                    'success': False,
+                    'message': 'ID no recibido'
+                })
+
+            materia = Materia.objects.get(id=materia_id)
+            materia.delete()
+
+            return JsonResponse({'success': True})
+
+        except Materia.DoesNotExist:
+            return JsonResponse({
+                'success': False,
+                'message': 'Materia no existe'
+            })
+
+        except Exception as e:
+            return JsonResponse({
+                'success': False,
+                'message': str(e)
+            })
+
+    return JsonResponse({'success': False})
+
+def eliminar_carrera_ajax(request):
+
+    if request.method == 'POST':
+        try:
+            data = json.loads(request.body)
+
+            carrera = Carrera.objects.get(id=data.get('id'))
+            carrera.delete()
+
+            return JsonResponse({'success': True})
+
+        except Exception as e:
+            return JsonResponse({'success': False, 'error': str(e)})
+
+    return JsonResponse({'success': False})
 
 @login_required
 def editar_carrera(request, id):
@@ -124,6 +171,8 @@ def login_view(request):
             print("DESPUÉS:", request.user.is_authenticated)  # 🔥
 
             return redirect('/alumnos/')
+        else:
+            messages.error(request, 'Usuario o contraseña incorrectos')
 
     return render(request, 'registration/login.html')
 
@@ -164,15 +213,48 @@ def editar_maestro_ajax(request):
 
 
 
+from django.http import JsonResponse
+import json
+from .models import Maestro
 
 def eliminar_maestro_ajax(request):
-    import json
-    from django.http import JsonResponse
-    from .models import Maestro
 
-    data = json.loads(request.body)
-    Maestro.objects.get(id=data['id']).delete()
-    return JsonResponse({'status': 'ok'})
+    if request.method == 'POST':
+        try:
+            data = json.loads(request.body)
+
+            print("DATA RECIBIDA:", data)  # 🔥 DEBUG
+
+            maestro_id = data.get('id')
+
+            if not maestro_id:
+                return JsonResponse({
+                    'status': 'error',
+                    'message': 'ID no recibido'
+                }, status=400)
+
+            maestro = Maestro.objects.get(id=maestro_id)
+            maestro.delete()
+
+            return JsonResponse({'status': 'ok'})
+
+        except Maestro.DoesNotExist:
+            return JsonResponse({
+                'status': 'error',
+                'message': 'Maestro no existe'
+            }, status=404)
+
+        except Exception as e:
+            return JsonResponse({
+                'status': 'error',
+                'message': str(e)
+            }, status=500)
+
+    return JsonResponse({'status': 'error'}, status=400)
+
+
+
+
 
 def lista_maestros(request):
 

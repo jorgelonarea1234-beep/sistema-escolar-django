@@ -39,7 +39,8 @@
                             Editar
                         </button>
                     
-                        <button class="btn btn-outline-danger btn-sm"
+                        <button 
+                            class="btn btn-outline-danger btn-sm"
                             data-id="{{ m.id }}"
                             onclick="confirmarEliminar(this)">
                             Eliminar
@@ -169,7 +170,16 @@ function confirmarEliminar(btn) {
     new bootstrap.Modal(document.getElementById('modalEliminar')).show();
 }
 
-function eliminarMaestro() {
+
+
+function eliminarMaestro(){
+
+    console.log("ID enviado:", maestroAEliminar);
+
+    if(!maestroAEliminar){
+        alert("No hay ID");
+        return;
+    }
 
     fetch('/alumnos/maestros/eliminar_ajax/', {
         method: 'POST',
@@ -177,28 +187,30 @@ function eliminarMaestro() {
             'Content-Type': 'application/json',
             'X-CSRFToken': getCookie('csrftoken')
         },
-        body: JSON.stringify({ id: maestroAEliminar })
+        body: JSON.stringify({
+            id: maestroAEliminar
+        })
     })
     .then(res => res.json())
-    .then(() => {
-
-        mostrarToast("Maestro eliminado correctamente", "danger");
-
-        // 🔥 cerrar modal
-        const modal = bootstrap.Modal.getInstance(document.getElementById('modalEliminar'));
-        modal.hide();
-
-        // 🔥 eliminar fila con animación
-        const fila = botonEliminar.closest('tr');
-        fila.style.transition = "0.3s";
-        fila.style.opacity = "0";
-
-        setTimeout(() => fila.remove(), 300);
+    .then(data => {
+        if(data.status === 'ok'){
+            location.reload();
+        } else {
+            alert(data.message);
+        }
     });
 }
 
+
 // ================= TOAST =================
 function mostrarToast(mensaje, tipo="success") {
+
+    const container = document.getElementById('toast-container');
+
+    if(!container){
+        console.warn("No existe toast-container");
+        return;
+    }
 
     const toast = document.createElement('div');
 
@@ -210,10 +222,9 @@ function mostrarToast(mensaje, tipo="success") {
         </div>
     `;
 
-    document.getElementById('toast-container').appendChild(toast);
+    container.appendChild(toast);
 
     setTimeout(() => toast.remove(), 3000);
 }
-
 </script>
 {% endblock %}

@@ -59,4 +59,7 @@ urlpatterns = [
     path('maestros/crear_ajax/', views.crear_maestro_ajax, name='crear_maestro_ajax'),
     path('maestros/editar_ajax/', views.editar_maestro_ajax, name='editar_maestro_ajax'),
     path('maestros/eliminar_ajax/', views.eliminar_maestro_ajax, name='eliminar_maestro_ajax'),
+
+    path('carreras/eliminar_ajax/', views.eliminar_carrera_ajax),
+    path('materias/eliminar_ajax/', views.eliminar_materia_ajax),
 ]
