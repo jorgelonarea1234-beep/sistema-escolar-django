@@ -111,6 +111,14 @@
                     </li>
                 {% endif %}
 
+                {% if request.user.alumno %}
+                    <li class="nav-item">
+                        <a class="nav-link" href="{% url 'inscripcion_materias' %}">
+                            Inscripción
+                        </a>
+                    </li>
+                    {% endif %}
+
             </ul>
 
             <span class="me-3 text-white">
@@ -149,7 +157,7 @@
     {% endblock %}
 
 </div>
-
+<div id="toast-container" class="position-fixed top-0 end-0 p-3" style="z-index:9999;"></div>
 <!-- SCRIPTS -->
 {% block scripts %}{% endblock %}
 <div id="toast-container" class="position-fixed top-0 end-0 p-3" style="z-index: 9999;"></div>

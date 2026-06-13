@@ -26,8 +26,42 @@ class Materia(models.Model):
     carreras = models.ManyToManyField(Carrera)
     maestro = models.ForeignKey(Maestro, on_delete=models.CASCADE, null=True, blank=True)
 
+    # 🔥 NUEVO
+    DIA_CHOICES = [
+    ('Lunes', 'Lunes'),
+    ('Martes', 'Martes'),
+    ('Miercoles', 'Miércoles'),
+    ('Jueves', 'Jueves'),
+    ('Viernes', 'Viernes'),
+    ]
+    
+    dia = models.CharField(max_length=10, choices=DIA_CHOICES, null=True, blank=True)
+    hora_inicio = models.TimeField(null=True, blank=True)
+    hora_fin = models.TimeField(null=True, blank=True)
+
     def __str__(self):
         return self.nombre
+
+
+
+class Horario(models.Model):
+
+    materia = models.ForeignKey(Materia, on_delete=models.CASCADE, related_name='horarios')
+
+    DIA_CHOICES = [
+        ('Lunes', 'Lunes'),
+        ('Martes', 'Martes'),
+        ('Miercoles', 'Miércoles'),
+        ('Jueves', 'Jueves'),
+        ('Viernes', 'Viernes'),
+    ]
+
+    dia = models.CharField(max_length=10, choices=DIA_CHOICES)
+    hora_inicio = models.TimeField()
+    hora_fin = models.TimeField()
+
+    def __str__(self):
+        return f"{self.dia} {self.hora_inicio}-{self.hora_fin}"
     
 
 

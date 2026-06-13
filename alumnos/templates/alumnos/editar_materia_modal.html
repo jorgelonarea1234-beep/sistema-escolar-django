@@ -8,7 +8,70 @@
 
     <div class="modal-body">
         {{ form.as_p }}
+
+        <hr>
+
+<h6>Horarios</h6>
+
+<div id="lista-horarios">
+
+    {% for h in materia.horarios.all %}
+        <div class="border p-2 mb-2 d-flex justify-content-between align-items-center">
+
+            <div>
+                <b>{{ h.dia }}</b> 
+                {{ h.hora_inicio|time:"H:i" }} - {{ h.hora_fin|time:"H:i" }}
+            </div>
+
+             <button 
+                type="button"
+                class="btn btn-danger btn-sm"
+                onclick="eliminarHorario(this, {{ h.id }})">
+                Eliminar
+            </button>
+
+        </div>
+    {% empty %}
+        <span class="text-danger">Sin horarios</span>
+    {% endfor %}
+
+</div>
+
+<hr>
+
+<h6>Agregar horario</h6>
+
+<div class="row g-2">
+
+    <div class="col-4">
+        <select id="dia" class="form-select">
+            <option value="">Día</option>
+            <option>Lunes</option>
+            <option>Martes</option>
+            <option>Miércoles</option>
+            <option>Jueves</option>
+            <option>Viernes</option>
+        </select>
     </div>
+
+    <div class="col-3">
+        <input type="time" id="hora_inicio" class="form-control">
+    </div>
+
+    <div class="col-3">
+        <input type="time" id="hora_fin" class="form-control">
+    </div>
+
+    <div class="col-2">
+        <button 
+             type="button"
+             class="btn btn-success w-100"
+             onclick="agregarHorario({{ materia.id }})">
+             +
+        </button>
+    </div>
+
+</div>
 
     <div class="modal-footer">
         <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">
@@ -18,5 +81,8 @@
         <button type="submit" class="btn btn-dark">
             Guardar
         </button>
+
+    </div>
+
     </div>
 </form>

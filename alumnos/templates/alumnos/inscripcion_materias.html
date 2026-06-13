@@ -1,0 +1,206 @@
+{% extends 'base.html' %}
+
+{% block content %}
+
+<div class="container">
+
+    <h4 class="mb-3">📚 Inscripción de Materias</h4>
+
+    <div class="card p-3 shadow-sm">
+
+        <table class="table table-hover">
+            <thead>
+                <tr>
+                    <th>Materia</th>
+                    <th>Día</th>
+                    <th>Horario</th>
+                    <th></th>
+                </tr>
+            </thead>
+
+            <tbody>
+                {% for m in materias %}
+                <tr>
+
+                    <td>{{ m.nombre }}</td>
+                    <td>
+                        {% for h in m.horarios.all %}
+                            <div>{{ h.dia }}: {{ h.hora_inicio }} - {{ h.hora_fin }}</div>
+                        {% empty %}
+                            <span class="text-danger">Sin horario</span>
+                        {% endfor %}
+                    </td>
+
+                    <td>
+                        {% if m in alumno.materias.all %}
+                            <button class="btn btn-secondary btn-sm" disabled>
+                                Inscrito
+                            </button>
+                        {% else %}
+                            <button 
+                                class="btn btn-success btn-sm"
+                                onclick="inscribirMateria(
+                                {{ m.id }},
+                                '{{ m.nombre }}',
+                                `{% for h in m.horarios.all %}{{ h.dia }} {{ h.hora_inicio|time:"H:i" }}-{{ h.hora_fin|time:"H:i" }}<br>{% empty %}Sin horario{% endfor %}`,
+                                this)">
+                                Inscribirse
+                        </button>
+                        {% endif %}
+                    </td>
+
+                </tr>
+                {% endfor %}
+            </tbody>
+
+        </table>
+
+       
+
+    </div>
+
+
+
+    <div class="modal fade" id="modalConfirmar" tabindex="-1">
+  <div class="modal-dialog modal-dialog-centered">
+    <div class="modal-content">
+
+      <div class="modal-header">
+        <h5 class="modal-title">Confirmar inscripción</h5>
+        <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+      </div>
+
+      <div class="modal-body">
+         <p>
+            ¿Deseas inscribirte a <b id="nombreMateria"></b>?
+         </p>
+
+        <div class="small text-muted" id="infoMateria"></div>
+    </div>
+
+      <div class="modal-footer">
+        <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">
+          Cancelar
+        </button>
+
+        <button type="button" class="btn btn-success" id="btnConfirmarInscripcion">
+          Sí, inscribirme
+        </button>
+      </div>
+
+    </div>
+  </div>
+</div>
+
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script>
+
+// 🔐 CSRF
+function getCookie(name) {
+    let cookieValue = null;
+    if (document.cookie && document.cookie !== '') {
+        let cookies = document.cookie.split(';');
+        for (let c of cookies) {
+            c = c.trim();
+            if (c.startsWith(name + '=')) {
+                cookieValue = c.substring(name.length + 1);
+            }
+        }
+    }
+    return cookieValue;
+}
+
+// 🔥 TOAST
+function mostrarToast(mensaje, tipo="success") {
+
+    const container = document.getElementById('toast-container');
+
+    if(!container){
+        console.error("NO EXISTE toast-container");
+        return;
+    }
+
+    const toast = document.createElement('div');
+
+    toast.className = `toast align-items-center text-bg-${tipo} border-0 show mb-2`;
+    toast.innerHTML = `
+        <div class="d-flex">
+            <div class="toast-body">${mensaje}</div>
+            <button type="button" class="btn-close btn-close-white me-2 m-auto"></button>
+        </div>
+    `;
+
+    container.appendChild(toast);
+
+    setTimeout(() => toast.remove(), 3000);
+}
+
+
+let materiaSeleccionada = null;
+let botonSeleccionado = null;
+
+function inscribirMateria(id, nombre, horarios, btn){
+
+    materiaSeleccionada = id;
+    botonSeleccionado = btn;
+
+    // 🔥 nombre
+    document.getElementById('nombreMateria').innerText = nombre;
+
+    // 🔥 horarios
+    document.getElementById('infoMateria').innerHTML = horarios;
+
+    let modal = new bootstrap.Modal(document.getElementById('modalConfirmar'));
+    modal.show();
+}
+
+
+
+document.getElementById('btnConfirmarInscripcion')
+.addEventListener('click', function(){
+
+    fetch('/alumnos/inscribir_materia/', {
+        method: 'POST',
+        headers: {
+            'Content-Type': 'application/json',
+            'X-CSRFToken': getCookie('csrftoken')
+        },
+        body: JSON.stringify({
+            materia_id: materiaSeleccionada
+        })
+    })
+    .then(res => res.json())
+    .then(data => {
+
+        if(data.status === 'ok'){
+
+            mostrarToast("Inscripción exitosa ✅");
+
+            botonSeleccionado.disabled = true;
+            botonSeleccionado.innerText = "Inscrito";
+            botonSeleccionado.classList.remove('btn-success');
+            botonSeleccionado.classList.add('btn-secondary');
+
+            bootstrap.Modal.getInstance(
+                document.getElementById('modalConfirmar')
+            ).hide();
+
+        }else{
+            mostrarToast(data.mensaje, "danger");
+        }
+
+    });
+
+});
+
+</script>
+{% endblock %}
+
+
+
+
+
+

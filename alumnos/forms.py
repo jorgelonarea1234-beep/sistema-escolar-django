@@ -30,17 +30,27 @@ class MaestroForm(forms.ModelForm):
 
 class MateriaForm(forms.ModelForm):
     class Meta:
+
         model = Materia
-        fields = '__all__'
+        fields = ['nombre', 'clave', 'carreras', 'maestro']
 
         widgets = {
             'nombre': forms.TextInput(attrs={'class': 'form-control'}),
             'clave': forms.TextInput(attrs={'class': 'form-control'}),
 
             'carreras': forms.SelectMultiple(attrs={'class': 'form-control'}),
-
-            # 🔥 ESTE ES EL CORRECTO
             'maestro': forms.Select(attrs={'class': 'form-control'}),
+
+            # 🔥 NUEVOS (CLAVE)
+            #'dia': forms.Select(attrs={'class': 'form-control'}),
+
+            #'hora_inicio': forms.TimeInput(
+            #    attrs={'class': 'form-control', 'type': 'time'}
+            #),
+
+            #'hora_fin': forms.TimeInput(
+            #    attrs={'class': 'form-control', 'type': 'time'}
+            #),
         }
 
 

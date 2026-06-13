@@ -1,0 +1,63 @@
+{% extends 'base.html' %}
+
+{% block content %}
+
+<div class="container">
+
+    <h4 class="mb-4">📅 Mi Horario</h4>
+
+    <div class="card p-3 shadow-sm">
+
+        <table class="table table-bordered text-center">
+
+            <thead>
+                <tr>
+                    <th>Día / Hora</th>
+                    <th>7 - 9</th>
+                    <th>9 - 11</th>
+                    <th>11 - 13</th>
+                    <th>13 - 15</th>
+                </tr>
+            </thead>
+
+            <tbody>
+
+                {% for dia in dias %}
+                <tr>
+
+                    <td><b>{{ dia }}</b></td>
+
+                    {% for bloque in bloques %}
+                    <td>
+
+                        {% for m in materias %}
+                            {% for h in m.horarios.all %}
+
+                                {% if h.dia == dia %}
+                                    {% if h.hora_inicio.hour <= bloque|add:0 and h.hora_fin.hour > bloque|add:0 %}
+                                        
+                                        <div class="bg-success text-white p-1 rounded mb-1">
+                                            {{ m.nombre }}
+                                        </div>
+
+                                    {% endif %}
+                                {% endif %}
+
+                            {% endfor %}
+                        {% endfor %}
+
+                    </td>
+                    {% endfor %}
+
+                </tr>
+                {% endfor %}
+
+            </tbody>
+
+        </table>
+
+    </div>
+
+</div>
+
+{% endblock %}

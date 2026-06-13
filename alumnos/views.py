@@ -39,6 +39,119 @@ from django.http import JsonResponse
 import json
 from .models import Carrera
 from .models import Materia
+from django.http import JsonResponse
+from .models import Horario
+
+
+def agregar_horario(request):
+
+    if request.method == 'POST':
+        data = json.loads(request.body)
+
+        materia = Materia.objects.get(id=data['materia_id'])
+
+        Horario.objects.create(
+            materia=materia,
+            dia=data['dia'],
+            hora_inicio=data['hora_inicio'],
+            hora_fin=data['hora_fin']
+        )
+
+        return JsonResponse({'status': 'ok'})
+
+
+def eliminar_horario(request):
+
+    if request.method == 'POST':
+        data = json.loads(request.body)
+
+        horario = Horario.objects.get(id=data['id'])
+        horario.delete()
+
+        return JsonResponse({'status': 'ok'})
+
+
+@login_required
+def horario_alumno(request):
+
+    alumno = Alumno.objects.get(user=request.user)
+    materias = alumno.materias.prefetch_related('horarios')
+
+    dias = ['Lunes', 'Martes', 'Miercoles', 'Jueves', 'Viernes']
+    bloques = [7, 9, 11, 13]
+
+    return render(request, 'alumnos/horario.html', {
+        'materias': materias,
+        'dias': dias,
+        'bloques': bloques
+    })
+
+
+@login_required
+def inscripcion_materias(request):
+
+    alumno = Alumno.objects.get(user=request.user)
+
+    # materias disponibles (puedes filtrar por carrera después)
+    materias = Materia.objects.all()
+
+    return render(request, 'alumnos/inscripcion_materias.html', {
+        'materias': materias,
+        'alumno': alumno
+    })
+
+
+
+def inscribir_materia(request):
+
+    if request.method == 'POST':
+
+        alumno = Alumno.objects.get(user=request.user)
+
+        # 🔥 AQUÍ VA LO QUE PREGUNTASTE
+        data = json.loads(request.body)
+        materia_id = data.get('materia_id')
+
+        materia = Materia.objects.get(id=materia_id)
+        materias_actuales = alumno.materias.all()
+
+        # 🔥 VALIDACIÓN
+        if hay_conflicto(materia, materias_actuales):
+            return JsonResponse({
+                'status': 'error',
+                'mensaje': 'Hay choque de horario en materias seleccionadas'
+            })
+
+        alumno.materias.add(materia)
+
+        return JsonResponse({'status': 'ok'})
+
+    return JsonResponse({'status': 'error'}, status=400)
+
+
+
+
+def hay_conflicto(nueva_materia, materias_alumno):
+
+    for materia_existente in materias_alumno:
+
+        for h1 in nueva_materia.horarios.all():
+            for h2 in materia_existente.horarios.all():
+
+                # mismo día
+                if h1.dia != h2.dia:
+                    continue
+
+                # choque de horario
+                if (
+                    h1.hora_inicio < h2.hora_fin and
+                    h1.hora_fin > h2.hora_inicio
+                ):
+                    return True
+
+    return False
+
+
 
 def eliminar_materia_ajax(request):
 
@@ -736,9 +849,7 @@ def detalle_alumno(request, id):
     alumno = Alumno.objects.get(id=id)
 
     # 🔥 MATERIAS SEGÚN SU CARRERA
-    materias = Materia.objects.filter(
-        carreras=alumno.carrera
-    )
+    materias = alumno.materias.all()
 
     calificaciones = Calificacion.objects.filter(
         alumno=alumno

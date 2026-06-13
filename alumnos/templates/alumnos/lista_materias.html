@@ -219,6 +219,95 @@ function guardarMateria(e, id){
     });
 }
 
+function eliminarHorario(btn, id){
+
+    fetch('/alumnos/horarios/eliminar/', {
+        method: 'POST',
+        headers: {
+            'Content-Type': 'application/json',
+            'X-CSRFToken': getCookie('csrftoken')
+        },
+        body: JSON.stringify({ id: id })
+    })
+    .then(res => res.json())
+    .then(data => {
+
+        if(data.status === 'ok'){
+
+            mostrarToast("Horario eliminado 🗑️");
+
+            // 🔥 eliminar del DOM SIN recargar
+            let contenedor = btn.closest('.border');
+            contenedor.remove();
+
+        }
+
+    });
+}
+
+
+
+function agregarHorario(materia_id){
+
+    let dia = document.getElementById('dia').value;
+    let hora_inicio = document.getElementById('hora_inicio').value;
+    let hora_fin = document.getElementById('hora_fin').value;
+
+    if(!dia || !hora_inicio || !hora_fin){
+        mostrarToast("Completa todos los campos", "danger");
+        return;
+    }
+
+    fetch('/alumnos/horarios/agregar/', {
+        method: 'POST',
+        headers: {
+            'Content-Type': 'application/json',
+            'X-CSRFToken': getCookie('csrftoken')
+        },
+        body: JSON.stringify({
+            materia_id: materia_id,
+            dia: dia,
+            hora_inicio: hora_inicio,
+            hora_fin: hora_fin
+        })
+    })
+    .then(res => res.json())
+    .then(data => {
+
+        if(data.status === 'ok'){
+
+            mostrarToast("Horario agregado ✅");
+
+            // 🔥 insertar arriba sin recargar
+            let lista = document.getElementById('lista-horarios');
+
+            let nuevo = document.createElement('div');
+            nuevo.className = "border p-2 mb-2 d-flex justify-content-between align-items-center";
+
+            nuevo.innerHTML = `
+                <div>
+                    <b>${dia}</b> ${hora_inicio} - ${hora_fin}
+                </div>
+
+                <button 
+                    class="btn btn-danger btn-sm"
+                    onclick="this.parentElement.remove()">
+                    Eliminar
+                </button>
+            `;
+
+            lista.prepend(nuevo); // 🔥 lo pone arriba
+
+            // limpiar inputs
+            document.getElementById('dia').value = "";
+            document.getElementById('hora_inicio').value = "";
+            document.getElementById('hora_fin').value = "";
+
+        }
+
+    });
+}
+
 </script>
 
 {% endblock %}

@@ -62,4 +62,11 @@ urlpatterns = [
 
     path('carreras/eliminar_ajax/', views.eliminar_carrera_ajax),
     path('materias/eliminar_ajax/', views.eliminar_materia_ajax),
+
+    path('inscripcion/', views.inscripcion_materias, name='inscripcion_materias'),
+    path('inscribir_materia/', views.inscribir_materia),
+
+    path('horario/', views.horario_alumno, name='horario_alumno'),
+    path('horarios/eliminar/', views.eliminar_horario, name='eliminar_horario'),
+    path('horarios/agregar/', views.agregar_horario, name='agregar_horario'),
 ]
