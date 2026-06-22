@@ -6,7 +6,7 @@
 <div class="container">
 
     <h3 class="fw-semibold mb-4">
-        📄 Boleta de {{ alumno.nombre }}
+         {{ alumno.nombre }}
     </h3>
 
     <!-- DATOS -->
@@ -24,80 +24,77 @@
                 <small class="text-muted">Carrera</small>
                 <p class="fw-semibold">{{ alumno.carrera }}</p>
             </div>
-
         </div>
     </div>
-<a href="{% url 'generar_pdf' alumno.id %}" class="btn btn-danger btn-sm">
-               📄 Descargar boleta
-            </a>
-    <!-- TABLA -->
-    <div class="card p-3 shadow-sm mb-4">
 
-        <table class="table table-hover align-middle">
+    <div class="d-flex justify-content-between align-items-center mb-4">
+    <h3 class="fw-semibold">
+        Calificaciones
+    </h3>
+
+    <a href="{% url 'generar_pdf' alumno.id %}" class="btn btn-danger btn-sm">
+        📄 Descargar Boleta en PDF
+    </a>
+</div>
+
+    <!-- TABLA -->
+    <div class="card p-3 shadow-sm">
+
+        <table class="table table-hover text-center align-middle">
 
             <thead>
                 <tr>
                     <th>Materia</th>
-                    <th>Calificación</th>
-                    <th class="text-end">Acciones</th>
+                    <th>Parcial 1</th>
+                    <th>Parcial 2</th>
+                    <th>Parcial 3</th>
+                    <th>Promedio</th>
+                    <th>Acciones</th>
                 </tr>
             </thead>
 
             <tbody>
 
                 {% for materia in materias %}
-                <tr id="fila-{{ materia.id }}">
+                <tr>
 
-                    <td>{{ materia.nombre }}</td>
+                    <td class="text-start">{{ materia.nombre }}</td>
 
-                    {% with cal=calificaciones|get_calificacion:materia.id %}
+                    <td>{{ mapa|get_item:materia.id|get_item:"p1" }}</td>
+                    <td>{{ mapa|get_item:materia.id|get_item:"p2" }}</td>
+                    <td>{{ mapa|get_item:materia.id|get_item:"p3" }}</td>
 
-                    <td id="cal-{{ materia.id }}"
-                        class="{% if cal and cal.calificacion >= 70 %}text-success fw-bold{% elif cal %}text-danger fw-bold{% endif %}">
-                        {{ cal.calificacion|default:"-" }}
+                    <td>
+                        {{ mapa|get_item:materia.id|get_item:"promedio" }}
                     </td>
 
-                    <td class="text-end">
-
-                    {% if request.user.is_superuser or materia.maestro and materia.maestro.user == request.user %}
-
-                        {% if cal %}
+                    <td>
+                        {% if request.user.is_superuser or materia.maestro.user == request.user %}
                         <div class="btn-group">
 
-                            <button class="btn btn-outline-warning btn-sm"
-                                data-id="{{ cal.id }}"
-                                data-materia="{{ materia.id }}"
-                                data-nombre="{{ materia.nombre }}"
-                                data-calificacion="{{ cal.calificacion }}"
-                                onclick="editarDesdeBoton(this)">
-                                Editar
+                            <button class="btn btn-dark btn-sm"
+                                onclick="abrirModal(
+                                {{ materia.id }},
+                                '{{ materia.nombre }}',
+                                '{{ mapa|get_item:materia.id|get_item:"p1"|default:"" }}',
+                                '{{ mapa|get_item:materia.id|get_item:"p2"|default:"" }}',
+                                '{{ mapa|get_item:materia.id|get_item:"p3"|default:"" }}'
+                                )">
+                                + Agregar / Editar
                             </button>
 
-                            <button class="btn btn-outline-danger btn-sm"
-                                data-id="{{ cal.id }}"
-                                data-materia="{{ materia.id }}"
-                                onclick="confirmarEliminar(this)">
+                            <button class="btn btn-danger btn-sm"
+                                onclick="confirmarEliminar({{ materia.id }})">
                                 Eliminar
                             </button>
 
                         </div>
 
                         {% else %}
-
-                        <button class="btn btn-dark btn-sm"
-                            data-id="{{ materia.id }}"
-                            data-nombre="{{ materia.nombre }}"
-                            onclick="abrirModalDesdeBoton(this)">
-                            + Agregar
-                        </button>
-
-                        {% endif %}
-
-                    {% endif %}
-
+                           <span class="text-muted">Solo lectura</span>
+                       {% endif %}
                     </td>
 
-                    {% endwith %}
                 </tr>
                 {% endfor %}
 
@@ -115,31 +112,38 @@
     <div class="modal-content">
 
       <div class="modal-header">
-        <h5 class="modal-title">Calificación</h5>
+        <h5 class="modal-title">Calificaciones</h5>
         <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
       </div>
 
       <div class="modal-body">
 
-        <input type="hidden" id="calificacion_id">
         <input type="hidden" id="materia_id">
-        <input type="hidden" id="alumno_id" value="{{ alumno.id }}">
 
         <div class="mb-3">
             <label>Materia</label>
             <input type="text" id="materia_nombre" class="form-control" readonly>
         </div>
 
-        <div class="mb-3">
-            <label>Calificación</label>
-            <input type="number" id="calificacion" class="form-control"
-                   min="1" max="100" step="1" placeholder="1 - 100" required>
+        <div class="row">
+            <div class="col">
+                <label>Parcial 1</label>
+                <input type="number" id="p1" class="form-control "min="0" max="100">
+            </div>
+            <div class="col">
+                <label>Parcial 2</label>
+                <input type="number" id="p2" class="form-control" min="0" max="100">
+            </div>
+            <div class="col">
+                <label>Parcial 3</label>
+                <input type="number" id="p3" class="form-control" min="0" max="100">
+            </div>
         </div>
 
       </div>
 
       <div class="modal-footer">
-        <button class="btn btn-dark" onclick="guardarCalificacion()">Guardar</button>
+        <button class="btn btn-dark" onclick="guardarCalificaciones()">Guardar</button>
       </div>
 
     </div>
@@ -152,108 +156,57 @@
     <div class="modal-content">
 
       <div class="modal-header">
-        <h5 class="modal-title">Confirmar eliminación</h5>
-        <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+        <h5>Eliminar calificaciones</h5>
       </div>
 
       <div class="modal-body">
-        ¿Estás seguro de eliminar esta calificación?
+        ¿Eliminar todas las calificaciones de esta materia?
       </div>
 
       <div class="modal-footer">
         <button class="btn btn-secondary" data-bs-dismiss="modal">Cancelar</button>
-        <button class="btn btn-danger" onclick="eliminarCalificacion()">Eliminar</button>
+        <button class="btn btn-danger" onclick="eliminarCalificaciones()">Eliminar</button>
       </div>
 
     </div>
   </div>
 </div>
 
+{% endblock %}
+
+
+{% block scripts %}
 <script>
 
-function abrirModalDesdeBoton(btn) {
-    document.getElementById('calificacion_id').value = '';
-    document.getElementById('materia_id').value = btn.dataset.id;
-    document.getElementById('materia_nombre').value = btn.dataset.nombre;
-    document.getElementById('calificacion').value = '';
+function mostrarToast(mensaje, tipo="success") {
 
-    new bootstrap.Modal(document.getElementById('modalCalificacion')).show();
-}
+    const container = document.getElementById('toast-container');
+    const toast = document.createElement('div');
 
-function editarDesdeBoton(btn) {
-    document.getElementById('calificacion_id').value = btn.dataset.id;
-    document.getElementById('materia_id').value = btn.dataset.materia;
-    document.getElementById('materia_nombre').value = btn.dataset.nombre;
-    document.getElementById('calificacion').value = btn.dataset.calificacion;
+    toast.className = `toast align-items-center text-bg-${tipo} border-0 show mb-2`;
 
-    new bootstrap.Modal(document.getElementById('modalCalificacion')).show();
-}
+    toast.innerHTML = `
+        <div class="d-flex">
+            <div class="toast-body">
+                ${mensaje}
+            </div>
+            <button type="button"
+                    class="btn-close btn-close-white me-2 m-auto"
+                    onclick="this.parentElement.parentElement.remove()">
+            </button>
+        </div>
+    `;
 
-function guardarCalificacion() {
+    container.appendChild(toast);
 
-    const id = document.getElementById('calificacion_id').value;
-    const materia_id = document.getElementById('materia_id').value;
-    const alumno_id = "{{ alumno.id }}";
-    const calificacion = document.getElementById('calificacion').value;
-    const cal = parseInt(calificacion);
+    setTimeout(() => {
+        toast.remove();
+    }, 3000);
+}    
 
-    if (isNaN(cal) || cal < 1 || cal > 100) {
-        mostrarToast("La calificación debe estar entre 1 y 100", "danger");
-        return;
-    }
 
-    const url = id 
-        ? '/alumnos/calificaciones/editar_ajax/' 
-        : '/alumnos/calificaciones/crear_ajax/';
 
-    fetch(url, {
-        method: 'POST',
-        headers: {
-            'Content-Type': 'application/json',
-            'X-CSRFToken': getCookie('csrftoken')
-        },
-        body: JSON.stringify({
-            id,
-            alumno_id,
-            materia_id,
-            calificacion
-        })
-    })
-    .then(res => res.json())
-    .then(data => {
-
-        if (data.status === "error") {
-            mostrarToast(data.mensaje, "danger");
-            return;
-        }
-
-        actualizarFila(materia_id, calificacion);
-        actualizarAcciones(materia_id, calificacion, data.id);
-
-        // 🔥 TODO DENTRO DEL THEN
-        const modal = bootstrap.Modal.getInstance(document.getElementById('modalCalificacion'));
-        if (modal) modal.hide();
-
-        mostrarToast("Calificación guardada");
-
-    })
-    .catch(err => {
-        console.error(err);
-        mostrarToast("Error al guardar", "danger");
-    });
-}
-
-function actualizarFila(materiaId, calificacion) {
-
-    const td = document.getElementById(`cal-${materiaId}`);
-
-    td.innerText = calificacion;
-
-    td.className = calificacion >= 70
-        ? "text-success fw-bold"
-        : "text-danger fw-bold";
-}
-
+// CSRF
 function getCookie(name) {
     return document.cookie.split(';')
         .map(c => c.trim())
@@ -261,94 +214,106 @@ function getCookie(name) {
         ?.split('=')[1];
 }
 
-let calificacionAEliminar = null;
-let materiaAEliminar = null;
+// ABRIR MODAL
+function abrirModal(id, nombre, p1, p2, p3){
 
-function confirmarEliminar(btn) {
+    document.getElementById('materia_id').value = id;
+    document.getElementById('materia_nombre').value = nombre;
 
-    console.log("CLICK ELIMINAR"); // 👈 DEBUG
-    console.log("ID:", btn.dataset.id); // 👈 CLAVE
+    document.getElementById('p1').value = p1 || '';
+    document.getElementById('p2').value = p2 || '';
+    document.getElementById('p3').value = p3 || '';
 
-    calificacionAEliminar = btn.dataset.id;
-    materiaAEliminar = btn.dataset.materia;
 
-    const modal = new bootstrap.Modal(document.getElementById('modalEliminar'));
-    modal.show();
+    // 🔥 Control de parciales
+
+    document.getElementById('p1').disabled =
+        {% if parciales_habilitados.1 %}false{% else %}true{% endif %};
+
+    document.getElementById('p2').disabled =
+        {% if parciales_habilitados.2 %}false{% else %}true{% endif %};
+
+    document.getElementById('p3').disabled =
+        {% if parciales_habilitados.3 %}false{% else %}true{% endif %};
+
+    new bootstrap.Modal(document.getElementById('modalCalificacion')).show();
 }
 
+// GUARDAR
+function guardarCalificaciones(){
 
-window.eliminarCalificacion = function () {
-
-    console.log("ELIMINAR CLICK"); // 👈 DEBUG
-
-    fetch('/alumnos/calificaciones/eliminar_ajax/', {
+    fetch('/alumnos/calificaciones/guardar_parciales/', {
         method: 'POST',
         headers: {
             'Content-Type': 'application/json',
             'X-CSRFToken': getCookie('csrftoken')
         },
         body: JSON.stringify({
-            id: calificacionAEliminar
+            alumno_id: "{{ alumno.id }}",
+            materia_id: document.getElementById('materia_id').value,
+            p1: document.getElementById('p1').value,
+            p2: document.getElementById('p2').value,
+            p3: document.getElementById('p3').value
+        })
+    })
+    
+.then(res => res.json())
+.then(data => {
+
+    if (data.status === "error") {
+        mostrarToast(data.mensaje, "danger");
+        return;
+    }
+
+    mostrarToast("Calificaciones guardadas correctamente ✅", "success");
+
+    setTimeout(() => {
+        location.reload();
+    }, 1000);
+});
+}
+
+
+// ELIMINAR
+let materiaEliminar = null;
+
+function confirmarEliminar(id){
+    materiaEliminar = id;
+    new bootstrap.Modal(document.getElementById('modalEliminar')).show();
+}
+
+
+
+
+function eliminarCalificaciones(){
+
+    fetch('/alumnos/calificaciones/eliminar_parciales/', {
+        method: 'POST',
+        headers: {
+            'Content-Type': 'application/json',
+            'X-CSRFToken': getCookie('csrftoken')
+        },
+        body: JSON.stringify({
+            alumno_id: "{{ alumno.id }}",
+            materia_id: materiaEliminar
         })
     })
     .then(res => res.json())
-    .then(() => {
+.then(data => {
 
-        const td = document.getElementById(`cal-${materiaAEliminar}`);
-        td.innerText = "-";
-        td.className = "";
+    mostrarToast(
+        "Calificaciones eliminadas correctamente",
+        "danger"
+    );
 
-        const fila = document.getElementById(`fila-${materiaAEliminar}`);
-        const accionesTd = fila.children[2];
+    setTimeout(() => {
+        location.reload();
+    }, 1000);
 
-        accionesTd.innerHTML = `
-            <button class="btn btn-dark btn-sm"
-                data-id="${materiaAEliminar}"
-                data-nombre="${fila.children[0].innerText}"
-                onclick="abrirModalDesdeBoton(this)">
-                + Agregar
-            </button>
-        `;
+   }); 
 
-        const modal = bootstrap.Modal.getInstance(document.getElementById('modalEliminar'));
-        if (modal) modal.hide();
-
-        mostrarToast("Calificación eliminada", "danger");
-    });
-}
-
-
-
-function actualizarAcciones(materiaId, calificacion, calificacionId) {
-
-    const fila = document.getElementById(`fila-${materiaId}`);
-    const accionesTd = fila.children[2];
-
-    const nombreMateria = fila.children[0].innerText;
-
-    accionesTd.innerHTML = `
-        <div class="btn-group">
-
-            <button class="btn btn-outline-warning btn-sm"
-                data-id="${calificacionId}"
-                data-materia="${materiaId}"
-                data-nombre="${nombreMateria}"
-                data-calificacion="${calificacion}"
-                onclick="editarDesdeBoton(this)">
-                Editar
-            </button>
-
-            <button class="btn btn-outline-danger btn-sm"
-                data-id="${calificacionId}"
-                data-materia="${materiaId}"
-                onclick="confirmarEliminar(this)">
-                Eliminar
-            </button>
-
-        </div>
-    `;
+    
 }
 
 </script>
-
 {% endblock %}

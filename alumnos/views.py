@@ -10,7 +10,6 @@ from openpyxl import load_workbook
 from .models import Carrera, Materia
 from django.shortcuts import render, redirect, get_object_or_404
 from reportlab.platypus import SimpleDocTemplate, Table, TableStyle, Paragraph
-from reportlab.lib import colors
 from reportlab.lib.styles import getSampleStyleSheet
 from django.contrib.auth.models import User
 import random
@@ -37,10 +36,87 @@ from django.shortcuts import get_object_or_404, redirect
 from django.contrib.auth.models import Group
 from django.http import JsonResponse
 import json
-from .models import Carrera
-from .models import Materia
-from django.http import JsonResponse
 from .models import Horario
+from .models import ConfiguracionParcial
+from reportlab.lib.pagesizes import letter
+from reportlab.platypus import SimpleDocTemplate, Table, TableStyle, Paragraph, Spacer
+from reportlab.lib.styles import getSampleStyleSheet
+from reportlab.lib import colors
+
+
+
+def guardar_parciales(request):
+    import json
+    from django.http import JsonResponse
+    from .models import Calificacion, Alumno, Materia, ConfiguracionParcial
+
+    data = json.loads(request.body)
+
+    alumno = Alumno.objects.get(id=data['alumno_id'])
+    materia = Materia.objects.get(id=data['materia_id'])
+
+    def guardar(parcial, valor):
+
+        habilitado = ConfiguracionParcial.objects.filter(
+            parcial=parcial,
+            habilitado=True
+        ).exists()
+
+        if not habilitado:
+            return
+
+        if valor == "" or valor is None:
+            Calificacion.objects.filter(
+                alumno=alumno,
+                materia=materia,
+                parcial=parcial
+            ).delete()
+            return
+
+        try:
+            valor = int(valor)
+        except:
+            raise ValueError("La calificación debe ser un número válido.")
+
+        if valor < 0 or valor > 100:
+            raise ValueError("La calificación debe estar entre 0 y 100.")
+
+        Calificacion.objects.update_or_create(
+            alumno=alumno,
+            materia=materia,
+            parcial=parcial,
+            defaults={
+                'calificacion': valor
+            }
+        )
+
+    try:
+        guardar(1, data.get('p1'))
+        guardar(2, data.get('p2'))
+        guardar(3, data.get('p3'))
+
+        return JsonResponse({'status': 'ok'})
+
+    except ValueError as e:
+        return JsonResponse({
+            'status': 'error',
+            'mensaje': str(e)
+        })
+
+
+def eliminar_parciales(request):
+    import json
+    from django.http import JsonResponse
+    from .models import Calificacion, Alumno, Materia
+
+    data = json.loads(request.body)
+
+    alumno = Alumno.objects.get(id=data['alumno_id'])
+    materia = Materia.objects.get(id=data['materia_id'])
+
+    Calificacion.objects.filter(alumno=alumno, materia=materia).delete()
+
+    return JsonResponse({'status': 'ok'})
 
 
 def agregar_horario(request):
@@ -91,13 +167,14 @@ def horario_alumno(request):
 def inscripcion_materias(request):
 
     alumno = Alumno.objects.get(user=request.user)
-
-    # materias disponibles (puedes filtrar por carrera después)
     materias = Materia.objects.all()
+
+    semestres = range(1, 9)
 
     return render(request, 'alumnos/inscripcion_materias.html', {
         'materias': materias,
-        'alumno': alumno
+        'alumno': alumno,
+        'semestres': semestres
     })
 
 
@@ -475,28 +552,26 @@ def guardar_calificacion_ajax(request):
 
     data = json.loads(request.body)
 
-    calificacion = int(data['calificacion'])
+    calificacion_valor = int(data['calificacion'])
 
-    # 🔥 VALIDACIÓN AQUÍ 👇
-    if calificacion < 1 or calificacion > 100:
+    if calificacion_valor < 1 or calificacion_valor > 100:
         return JsonResponse({
             'status': 'error',
             'mensaje': 'Calificación inválida (1-100)'
         })
 
-    # 🔥 GUARDAR
     materia = Materia.objects.get(id=data['materia_id'])
     alumno = Alumno.objects.get(id=data['alumno_id'])
+    parcial = int(data['parcial'])  # 🔥 NUEVO
 
     Calificacion.objects.update_or_create(
         alumno=alumno,
         materia=materia,
-        defaults={'calificacion': calificacion}
+        parcial=parcial,  # 🔥 CLAVE
+        defaults={'calificacion': calificacion_valor}
     )
 
     return JsonResponse({'status': 'ok'})
-
-
 
 
 
@@ -848,19 +923,53 @@ def detalle_alumno(request, id):
 
     alumno = Alumno.objects.get(id=id)
 
-    # 🔥 MATERIAS SEGÚN SU CARRERA
     materias = alumno.materias.all()
 
-    calificaciones = Calificacion.objects.filter(
-        alumno=alumno
-    )
+    calificaciones = Calificacion.objects.filter(alumno=alumno)
 
-    return render(request, 'alumnos/detalle_alumno.html', {
+    parciales_habilitados = {
+       c.parcial: c.habilitado
+       for c in ConfiguracionParcial.objects.all()
+    }
+
+
+    mapa = {}
+
+    for c in calificaciones:
+
+        if c.materia_id not in mapa:
+            mapa[c.materia_id] = {
+                'p1': '',
+                'p2': '',
+                'p3': ''
+            }
+
+        if c.parcial == 1:
+            mapa[c.materia_id]['p1'] = c.calificacion
+        elif c.parcial == 2:
+            mapa[c.materia_id]['p2'] = c.calificacion
+        elif c.parcial == 3:
+            mapa[c.materia_id]['p3'] = c.calificacion
+   
+    for key in mapa:
+        p1 = mapa[key]['p1'] or 0
+        p2 = mapa[key]['p2'] or 0
+        p3 = mapa[key]['p3'] or 0
+    
+        promedio = (int(p1) + int(p2) + int(p3)) / 3
+        mapa[key]['promedio'] = round(promedio, 1)        
+
+    
+    return render(request,
+    'alumnos/detalle_alumno.html',
+    {
         'alumno': alumno,
-        'materias': materias,  # 🔥 IMPORTANTE
-        'calificaciones': calificaciones
-    })
-
+        'materias': materias,
+        'mapa': mapa,
+        'parciales_habilitados': parciales_habilitados
+    }
+)
+    
   
 
 
@@ -931,40 +1040,69 @@ def eliminar_calificacion(request, id):
 def generar_pdf(request, id):
 
     alumno = Alumno.objects.get(id=id)
+    materias = alumno.materias.all()
     calificaciones = Calificacion.objects.filter(alumno=alumno)
-    promedio = calificaciones.aggregate(Avg('calificacion'))['calificacion__avg']
 
     response = HttpResponse(content_type='application/pdf')
-    response['Content-Disposition'] = f'attachment; filename="boleta_{alumno.nombre}.pdf"'
+    response['Content-Disposition'] = f'attachment; filename="boleta_{alumno.matricula}.pdf"'
 
-    doc = SimpleDocTemplate(response)
+    doc = SimpleDocTemplate(response, pagesize=letter)
     styles = getSampleStyleSheet()
 
     elementos = []
 
-    elementos.append(Paragraph(f"<b>Boleta de {alumno.nombre}</b>", styles['Title']))
-    elementos.append(Paragraph(f"Matrícula: {alumno.matricula}", styles['Normal']))
-    elementos.append(Paragraph(f"Carrera: {alumno.carrera}", styles['Normal']))
-    elementos.append(Paragraph("<br/><br/>", styles['Normal']))
+    elementos.append(Paragraph("SISTEMA ESCOLAR", styles['Title']))
+    elementos.append(Paragraph(f"<b>Boleta de calificaciones</b>", styles['Heading2']))
+    elementos.append(Spacer(1, 12))
 
-    data = [['Materia', 'Calificación']]
-    for c in calificaciones:
-        data.append([c.materia.nombre, str(c.calificacion)])
+    elementos.append(Paragraph(f"<b>Alumno:</b> {alumno.nombre}", styles['Normal']))
+    elementos.append(Paragraph(f"<b>Matrícula:</b> {alumno.matricula}", styles['Normal']))
+    elementos.append(Paragraph(f"<b>Correo:</b> {alumno.correo}", styles['Normal']))
+    elementos.append(Paragraph(f"<b>Carrera:</b> {alumno.carrera}", styles['Normal']))
+    elementos.append(Spacer(1, 20))
 
-    table = Table(data)
+    data = [['Materia', 'Parcial 1', 'Parcial 2', 'Parcial 3', 'Promedio']]
+
+    for materia in materias:
+        p1 = calificaciones.filter(materia=materia, parcial=1).first()
+        p2 = calificaciones.filter(materia=materia, parcial=2).first()
+        p3 = calificaciones.filter(materia=materia, parcial=3).first()
+
+        v1 = p1.calificacion if p1 else ''
+        v2 = p2.calificacion if p2 else ''
+        v3 = p3.calificacion if p3 else ''
+
+        valores = [v for v in [v1, v2, v3] if v != '']
+
+        promedio = round(sum(valores) / len(valores), 2) if valores else ''
+
+        data.append([
+            materia.nombre,
+            str(v1),
+            str(v2),
+            str(v3),
+            str(promedio)
+        ])
+
+    table = Table(data, colWidths=[220, 60, 60, 60, 80])
+
     table.setStyle(TableStyle([
-        ('GRID', (0,0), (-1,-1), 1, colors.black)
+        ('BACKGROUND', (0, 0), (-1, 0), colors.black),
+        ('TEXTCOLOR', (0, 0), (-1, 0), colors.white),
+        ('ALIGN', (1, 1), (-1, -1), 'CENTER'),
+        ('FONTNAME', (0, 0), (-1, 0), 'Helvetica-Bold'),
+        ('GRID', (0, 0), (-1, -1), 0.5, colors.grey),
+        ('ROWBACKGROUNDS', (0, 1), (-1, -1), [colors.whitesmoke, colors.lightgrey]),
+        ('BOTTOMPADDING', (0, 0), (-1, 0), 10),
+        ('TOPPADDING', (0, 0), (-1, 0), 10),
     ]))
 
     elementos.append(table)
-
-    if promedio:
-        elementos.append(Paragraph(f"<b>Promedio: {round(promedio,2)}</b>", styles['Heading2']))
+    elementos.append(Spacer(1, 20))
 
     doc.build(elementos)
 
     return response
-
 
 # ===============================
 # 📥📤 EXCEL

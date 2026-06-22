@@ -32,14 +32,14 @@ class MateriaForm(forms.ModelForm):
     class Meta:
 
         model = Materia
-        fields = ['nombre', 'clave', 'carreras', 'maestro']
+        fields = ['nombre', 'clave', 'carreras', 'maestro','semestre']
 
         widgets = {
             'nombre': forms.TextInput(attrs={'class': 'form-control'}),
             'clave': forms.TextInput(attrs={'class': 'form-control'}),
-
             'carreras': forms.SelectMultiple(attrs={'class': 'form-control'}),
             'maestro': forms.Select(attrs={'class': 'form-control'}),
+            'semestre': forms.Select(attrs={'class': 'form-control'}),
 
             # 🔥 NUEVOS (CLAVE)
             #'dia': forms.Select(attrs={'class': 'form-control'}),

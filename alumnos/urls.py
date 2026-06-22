@@ -69,4 +69,8 @@ urlpatterns = [
     path('horario/', views.horario_alumno, name='horario_alumno'),
     path('horarios/eliminar/', views.eliminar_horario, name='eliminar_horario'),
     path('horarios/agregar/', views.agregar_horario, name='agregar_horario'),
+
+    #calificaciones parciales
+    path('calificaciones/guardar_parciales/', views.guardar_parciales, name='guardar_parciales'),
+    path('calificaciones/eliminar_parciales/', views.eliminar_parciales, name='eliminar_parciales'),
 ]

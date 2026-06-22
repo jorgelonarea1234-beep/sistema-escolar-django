@@ -39,6 +39,19 @@ class Materia(models.Model):
     hora_inicio = models.TimeField(null=True, blank=True)
     hora_fin = models.TimeField(null=True, blank=True)
 
+    SEMESTRE_CHOICES = [
+        (1, '1° Semestre'),
+        (2, '2° Semestre'),
+        (3, '3° Semestre'),
+        (4, '4° Semestre'),
+        (5, '5° Semestre'),
+        (6, '6° Semestre'),
+        (7, '7° Semestre'),
+        (8, '8° Semestre'),
+    ]
+
+    semestre = models.IntegerField(choices=SEMESTRE_CHOICES, default=1)
+
     def __str__(self):
         return self.nombre
 
@@ -108,6 +121,15 @@ class Calificacion(models.Model):
 
     alumno = models.ForeignKey(Alumno, on_delete=models.CASCADE)
     materia = models.ForeignKey(Materia, on_delete=models.CASCADE)
+    
+
+    PARCIAL_CHOICES = [
+        (1, 'Parcial 1'),
+        (2, 'Parcial 2'),
+        (3, 'Parcial 3'),
+    ]
+
+    parcial = models.IntegerField(choices=PARCIAL_CHOICES)
     calificacion = models.DecimalField(max_digits=5, decimal_places=2)
 
     def __str__(self):
@@ -115,4 +137,16 @@ class Calificacion(models.Model):
 
 
 
+class ConfiguracionParcial(models.Model):
+    PARCIAL_CHOICES = [
+        (1, 'Parcial 1'),
+        (2, 'Parcial 2'),
+        (3, 'Parcial 3'),
+    ]
 
+    parcial = models.IntegerField(choices=PARCIAL_CHOICES, unique=True)
+    habilitado = models.BooleanField(default=False)
+
+    def __str__(self):
+        estado = "Habilitado" if self.habilitado else "Cerrado"
+        return f"Parcial {self.parcial} - {estado}"
