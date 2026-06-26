@@ -119,6 +119,16 @@
                     </li>
                     {% endif %}
 
+                
+                    
+                    {% if es_admin or es_maestro %}
+                        <li class="nav-item">
+                            <a class="nav-link" href="{% url 'lista_regularizaciones' %}">
+                                Regularizaciones
+                            </a>
+                        </li>
+                    {% endif %}
+
             </ul>
 
             <span class="me-3 text-white">

@@ -4,7 +4,7 @@ from django.shortcuts import render, redirect
 from django.http import HttpResponse
 from django.db.models import Count, Avg, Q
 from .models import Alumno, Materia, Calificacion
-from .forms import AlumnoForm, MateriaForm, CalificacionForm
+from .forms import AlumnoForm, MateriaForm, CalificacionForm, RegularizacionForm
 import openpyxl
 from openpyxl import load_workbook
 from .models import Carrera, Materia
@@ -42,6 +42,9 @@ from reportlab.lib.pagesizes import letter
 from reportlab.platypus import SimpleDocTemplate, Table, TableStyle, Paragraph, Spacer
 from reportlab.lib.styles import getSampleStyleSheet
 from reportlab.lib import colors
+from django.shortcuts import get_object_or_404, redirect, render
+from .models import ConfiguracionRegularizacion
+from .constants import SEMESTRES
 
 
 
@@ -544,6 +547,194 @@ def crear_calificacion_ajax(request):
         })
 
 
+@login_required
+@permission_required('alumnos.change_calificacion', raise_exception=True)
+def lista_regularizaciones(request):
+
+    config = ConfiguracionRegularizacion.objects.first()
+    if not config or not config.habilitado:
+        messages.error(request, "Las regularizaciones aún no están habilitadas.")
+        return redirect('lista_alumnos')
+
+    calificaciones = Calificacion.objects.filter(
+        calificacion__lt=70
+    ).select_related(
+        'alumno',
+        'materia'
+    ).order_by(
+        'alumno__nombre',
+        'materia__nombre',
+        'parcial'
+    )
+
+    return render(
+        request,
+        'alumnos/regularizaciones/lista.html',
+        {
+            'calificaciones': calificaciones
+        }
+    )
+
+
+
+@login_required
+@permission_required('alumnos.change_calificacion', raise_exception=True)
+def capturar_regularizacion(request, pk):
+
+    config = ConfiguracionRegularizacion.objects.first()
+    if not config or not config.habilitado:
+        messages.error(request, "Las regularizaciones aún no están habilitadas.")
+        return redirect('lista_alumnos')
+
+    calificacion = get_object_or_404(
+        Calificacion,
+        pk=pk
+    )
+
+    if request.method == 'POST':
+
+        form = RegularizacionForm(
+            request.POST,
+            instance=calificacion
+        )
+
+        if form.is_valid():
+            form.save()
+            return redirect('lista_regularizaciones')
+
+    else:
+
+        form = RegularizacionForm(
+            instance=calificacion
+        )
+
+    return render(
+        request,
+        'alumnos/regularizaciones/form.html',
+        {
+            'form': form,
+            'calificacion': calificacion
+        }
+    )
+
+
+def obtener_kardex(alumno):
+
+    materias = alumno.materias.all().order_by('semestre', 'nombre')
+
+    kardex = {}
+    promedio_general_lista = []
+    aprobadas = 0
+    reprobadas = 0
+
+    for materia in materias:
+
+        semestre = materia.semestre
+
+        if semestre not in kardex:
+            kardex[semestre] = {
+                'nombre': SEMESTRES.get(
+                    semestre,
+                    f"Semestre {semestre}"
+                ),
+                'materias': [],
+                'promedio': 0,
+                'aprobadas': 0,
+                'reprobadas': 0,
+                'cursadas': 0
+            }
+
+        calificaciones = Calificacion.objects.filter(
+            alumno=alumno,
+            materia=materia
+        )
+
+        notas = []
+
+        for c in calificaciones:
+            notas.append(c.calificacion_final())
+
+        if notas:
+            promedio_materia = round(sum(notas) / len(notas), 2)
+        else:
+            promedio_materia = None
+
+        if promedio_materia is not None:
+            promedio_general_lista.append(promedio_materia)
+
+            if promedio_materia >= 70:
+                estado = 'Aprobada'
+                aprobadas += 1
+                kardex[semestre]['aprobadas'] += 1
+            else:
+                estado = 'Reprobada'
+                reprobadas += 1
+                kardex[semestre]['reprobadas'] += 1
+        else:
+            estado = 'Sin calificar'
+
+        tipo = 'Ordinario'
+
+        for c in calificaciones:
+            if c.calificacion < 70 and c.regularizacion is not None:
+                tipo = 'Regularización'
+
+        kardex[semestre]['materias'].append({
+            'nombre': materia.nombre,
+            'final': promedio_materia,
+            'estado': estado,
+            'tipo': tipo
+        })
+
+        kardex[semestre]['cursadas'] += 1
+
+    for semestre, datos in kardex.items():
+
+        finales = [
+            m['final']
+            for m in datos['materias']
+            if m['final'] is not None
+        ]
+
+        if finales:
+            datos['promedio'] = round(sum(finales) / len(finales), 2)
+        else:
+            datos['promedio'] = None
+
+    promedio_general = round(
+        sum(promedio_general_lista) / len(promedio_general_lista),
+        2
+    ) if promedio_general_lista else None
+
+    return {
+        'kardex': kardex,
+        'promedio_general': promedio_general,
+        'aprobadas': aprobadas,
+        'reprobadas': reprobadas,
+        'materias_cursadas': aprobadas + reprobadas
+    }
+
+
+
+@login_required
+def kardex_alumno(request, id):
+
+    alumno = Alumno.objects.get(id=id)
+
+    if hasattr(request.user, 'alumno') and request.user.alumno.id != alumno.id:
+        return redirect('lista_alumnos')
+
+    datos_kardex = obtener_kardex(alumno)
+
+    return render(
+        request,
+        'alumnos/kardex.html',
+        {
+            'alumno': alumno,
+            **datos_kardex
+        }
+    )
+
 
 def guardar_calificacion_ajax(request):
     import json
@@ -932,7 +1123,6 @@ def detalle_alumno(request, id):
        for c in ConfiguracionParcial.objects.all()
     }
 
-
     mapa = {}
 
     for c in calificaciones:
@@ -940,37 +1130,72 @@ def detalle_alumno(request, id):
         if c.materia_id not in mapa:
             mapa[c.materia_id] = {
                 'p1': '',
+                'r1': '',
                 'p2': '',
-                'p3': ''
+                'r2': '',
+                'p3': '',
+                'r3': '',
+                'promedio': ''
             }
 
         if c.parcial == 1:
             mapa[c.materia_id]['p1'] = c.calificacion
+            mapa[c.materia_id]['r1'] = c.regularizacion or ''
+
         elif c.parcial == 2:
             mapa[c.materia_id]['p2'] = c.calificacion
+            mapa[c.materia_id]['r2'] = c.regularizacion or ''
+
         elif c.parcial == 3:
             mapa[c.materia_id]['p3'] = c.calificacion
-   
-    for key in mapa:
-        p1 = mapa[key]['p1'] or 0
-        p2 = mapa[key]['p2'] or 0
-        p3 = mapa[key]['p3'] or 0
-    
-        promedio = (int(p1) + int(p2) + int(p3)) / 3
-        mapa[key]['promedio'] = round(promedio, 1)        
+            mapa[c.materia_id]['r3'] = c.regularizacion or ''
 
-    
-    return render(request,
-    'alumnos/detalle_alumno.html',
-    {
-        'alumno': alumno,
-        'materias': materias,
-        'mapa': mapa,
-        'parciales_habilitados': parciales_habilitados
-    }
-)
-    
-  
+    for key in mapa:
+        notas = []
+
+        p1 = mapa[key]['p1']
+        r1 = mapa[key]['r1']
+
+        p2 = mapa[key]['p2']
+        r2 = mapa[key]['r2']
+
+        p3 = mapa[key]['p3']
+        r3 = mapa[key]['r3']
+
+        if p1 != '':
+            if p1 < 70 and r1 != '':
+                notas.append(r1)
+            else:
+                notas.append(p1)
+
+        if p2 != '':
+            if p2 < 70 and r2 != '':
+                notas.append(r2)
+            else:
+                notas.append(p2)
+
+        if p3 != '':
+            if p3 < 70 and r3 != '':
+                notas.append(r3)
+            else:
+                notas.append(p3)
+
+        if notas:
+            promedio = sum(notas) / len(notas)
+            mapa[key]['promedio'] = round(promedio, 1)
+        else:
+            mapa[key]['promedio'] = ''
+
+    return render(
+        request,
+        'alumnos/detalle_alumno.html',
+        {
+            'alumno': alumno,
+            'materias': materias,
+            'mapa': mapa,
+            'parciales_habilitados': parciales_habilitados
+        }
+    )  
 
 
 # ===============================
@@ -1061,30 +1286,47 @@ def generar_pdf(request, id):
     elementos.append(Paragraph(f"<b>Carrera:</b> {alumno.carrera}", styles['Normal']))
     elementos.append(Spacer(1, 20))
 
-    data = [['Materia', 'Parcial 1', 'Parcial 2', 'Parcial 3', 'Promedio']]
+    data = [['Materia', 'P1', 'R1', 'P2', 'R2', 'P3', 'R3', 'Promedio']]
 
     for materia in materias:
         p1 = calificaciones.filter(materia=materia, parcial=1).first()
         p2 = calificaciones.filter(materia=materia, parcial=2).first()
         p3 = calificaciones.filter(materia=materia, parcial=3).first()
-
+    
         v1 = p1.calificacion if p1 else ''
+        r1 = p1.regularizacion if p1 and p1.regularizacion is not None else ''
+    
         v2 = p2.calificacion if p2 else ''
+        r2 = p2.regularizacion if p2 and p2.regularizacion is not None else ''
+    
         v3 = p3.calificacion if p3 else ''
-
-        valores = [v for v in [v1, v2, v3] if v != '']
-
+        r3 = p3.regularizacion if p3 and p3.regularizacion is not None else ''
+    
+        valores = []
+    
+        if p1:
+            valores.append(p1.calificacion_final())
+    
+        if p2:
+            valores.append(p2.calificacion_final())
+    
+        if p3:
+            valores.append(p3.calificacion_final())
+    
         promedio = round(sum(valores) / len(valores), 2) if valores else ''
-
+    
         data.append([
             materia.nombre,
             str(v1),
+            str(r1),
             str(v2),
+            str(r2),
             str(v3),
+            str(r3),
             str(promedio)
         ])
 
-    table = Table(data, colWidths=[220, 60, 60, 60, 80])
+    table = Table(data, colWidths=[170, 45, 45, 45, 45, 45, 45, 65])    
 
     table.setStyle(TableStyle([
         ('BACKGROUND', (0, 0), (-1, 0), colors.black),

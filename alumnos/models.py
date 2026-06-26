@@ -121,7 +121,6 @@ class Calificacion(models.Model):
 
     alumno = models.ForeignKey(Alumno, on_delete=models.CASCADE)
     materia = models.ForeignKey(Materia, on_delete=models.CASCADE)
-    
 
     PARCIAL_CHOICES = [
         (1, 'Parcial 1'),
@@ -132,10 +131,25 @@ class Calificacion(models.Model):
     parcial = models.IntegerField(choices=PARCIAL_CHOICES)
     calificacion = models.DecimalField(max_digits=5, decimal_places=2)
 
+    regularizacion = models.DecimalField(
+        max_digits=5,
+        decimal_places=2,
+        null=True,
+        blank=True
+    )
+
+
+
+    def calificacion_final(self):
+        if self.calificacion < 70 and self.regularizacion is not None:
+            return self.regularizacion
+        return self.calificacion
+
     def __str__(self):
-        return f"{self.alumno} - {self.materia} - {self.calificacion}"
+        return f"{self.alumno} - {self.materia} - Parcial {self.parcial}"
 
-
+    class Meta:
+        unique_together = ('alumno', 'materia', 'parcial')
 
 class ConfiguracionParcial(models.Model):
     PARCIAL_CHOICES = [
@@ -149,4 +163,10 @@ class ConfiguracionParcial(models.Model):
 
     def __str__(self):
         estado = "Habilitado" if self.habilitado else "Cerrado"
-        return f"Parcial {self.parcial} - {estado}"
+        return f"Parcial {self.parcial} - {estado}"    
+    
+class ConfiguracionRegularizacion(models.Model):
+    habilitado = models.BooleanField(default=False)
+
+    def __str__(self):
+        return "Regularización habilitada" if self.habilitado else "Regularización cerrada"        

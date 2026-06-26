@@ -1,6 +1,7 @@
 from django.urls import path
 from . import views
 
+
 urlpatterns = [
 
     # 👨‍🎓 ALUMNOS
@@ -28,7 +29,16 @@ urlpatterns = [
     path('calificaciones/crear/<int:alumno_id>/', views.crear_calificacion, name='crear_calificacion'),
     path('calificaciones/editar/<int:id>/', views.editar_calificacion, name='editar_calificacion'),
     path('calificaciones/eliminar/<int:id>/', views.eliminar_calificacion, name='eliminar_calificacion'),
+    
+    
+    #REGULARIZACIONES
+    path('regularizaciones/', views.lista_regularizaciones, name='lista_regularizaciones'),
+    path('regularizaciones/<int:pk>/', views.capturar_regularizacion, name='capturar_regularizacion'),
 
+    #KARDEX
+    path('kardex/<int:id>/', views.kardex_alumno, name='kardex_alumno'),
+
+    
     # ⚡ AJAX CALIFICACIONES
     path('calificaciones/crear_ajax/', views.crear_calificacion_ajax),
     path('calificaciones/editar_ajax/', views.editar_calificacion_ajax),

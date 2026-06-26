@@ -32,9 +32,15 @@
         Calificaciones
     </h3>
 
+    <div class="d-flex gap-2">
     <a href="{% url 'generar_pdf' alumno.id %}" class="btn btn-danger btn-sm">
         📄 Descargar Boleta en PDF
     </a>
+
+    <a href="{% url 'kardex_alumno' alumno.id %}" class="btn btn-primary btn-sm">
+        🎓 Ver Kardex
+    </a>
+</div>
 </div>
 
     <!-- TABLA -->
@@ -44,12 +50,15 @@
 
             <thead>
                 <tr>
-                    <th>Materia</th>
-                    <th>Parcial 1</th>
-                    <th>Parcial 2</th>
-                    <th>Parcial 3</th>
-                    <th>Promedio</th>
-                    <th>Acciones</th>
+                     <th>Materia</th>
+                     <th>Parcial1</th>
+                     <th>Regularización1</th>
+                     <th>Parcial2</th>
+                     <th>Regularización2</th>
+                     <th>Parcial3</th>
+                     <th>Regularización3</th>
+                     <th>Promedio</th>
+                     <th>Acciones</th>
                 </tr>
             </thead>
 
@@ -60,13 +69,18 @@
 
                     <td class="text-start">{{ materia.nombre }}</td>
 
-                    <td>{{ mapa|get_item:materia.id|get_item:"p1" }}</td>
-                    <td>{{ mapa|get_item:materia.id|get_item:"p2" }}</td>
-                    <td>{{ mapa|get_item:materia.id|get_item:"p3" }}</td>
-
-                    <td>
-                        {{ mapa|get_item:materia.id|get_item:"promedio" }}
-                    </td>
+                        <td>{{ mapa|get_item:materia.id|get_item:"p1" }}</td>
+                        <td>{{ mapa|get_item:materia.id|get_item:"r1" }}</td>
+                        
+                        <td>{{ mapa|get_item:materia.id|get_item:"p2" }}</td>
+                        <td>{{ mapa|get_item:materia.id|get_item:"r2" }}</td>
+                        
+                        <td>{{ mapa|get_item:materia.id|get_item:"p3" }}</td>
+                        <td>{{ mapa|get_item:materia.id|get_item:"r3" }}</td>
+                        
+                        <td>
+                            {{ mapa|get_item:materia.id|get_item:"promedio" }}
+                        </td>
 
                     <td>
                         {% if request.user.is_superuser or materia.maestro.user == request.user %}

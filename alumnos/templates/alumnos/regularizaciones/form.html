@@ -1,0 +1,44 @@
+{% extends 'base.html' %}
+
+{% block content %}
+
+<div class="container mt-4">
+
+    <h2>Capturar Regularización</h2>
+
+    <div class="card">
+        <div class="card-body">
+
+            <p><strong>Alumno:</strong> {{ calificacion.alumno.nombre }}</p>
+
+            <p><strong>Materia:</strong> {{ calificacion.materia.nombre }}</p>
+
+            <p><strong>Parcial:</strong> {{ calificacion.parcial }}</p>
+
+            <p><strong>Calificación:</strong> {{ calificacion.calificacion }}</p>
+
+            <form method="POST">
+
+                {% csrf_token %}
+
+                {{ form.as_p }}
+
+                <button class="btn btn-success">
+                    Guardar
+                </button>
+
+                <a href="{% url 'lista_regularizaciones' %}"
+                   class="btn btn-secondary">
+
+                    Cancelar
+
+                </a>
+
+            </form>
+
+        </div>
+    </div>
+
+</div>
+
+{% endblock %}

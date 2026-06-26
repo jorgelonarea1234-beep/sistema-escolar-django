@@ -1,9 +1,11 @@
 from django.contrib import admin
 from .models import Alumno, Materia, Carrera, Calificacion, Maestro, Horario
 from .models import ConfiguracionParcial
+from .models import ConfiguracionRegularizacion
 
 
 admin.site.register(ConfiguracionParcial)
+admin.site.register(ConfiguracionRegularizacion)
 
 class HorarioInline(admin.TabularInline):
     model = Horario

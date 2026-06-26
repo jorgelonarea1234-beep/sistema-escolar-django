@@ -1,0 +1,190 @@
+{% extends 'base.html' %}
+
+{% block content %}
+
+<h3 class="fw-semibold mb-4">Kardex Académico</h3>
+
+<div class="card shadow-sm border-0 mb-4">
+    <div class="card-header bg-dark text-white">
+        <h4 class="mb-0">🎓 Kardex Académico</h4>
+    </div>
+
+    <div class="card-body">
+        <div class="row align-items-center">
+            <div class="col-md-8">
+                <h4 class="fw-bold mb-2">{{ alumno.nombre }}</h4>
+
+                <p class="mb-1">
+                    <strong>Matrícula:</strong> {{ alumno.matricula }}
+                </p>
+
+                <p class="mb-1">
+                    <strong>Carrera:</strong> {{ alumno.carrera }}
+                </p>
+            </div>
+
+            <div class="col-md-4 text-md-end">
+                <a href="{% url 'detalle_alumno' alumno.id %}" class="btn btn-outline-dark btn-sm">
+                    ← Regresar al detalle
+                </a>
+            </div>
+        </div>
+    </div>
+</div>
+
+
+{% for semestre, datos in kardex.items %}
+
+<div class="card p-3 mb-4 shadow-sm">
+    <h5 class="fw-bold text-primary">
+       {{ datos.nombre }}
+    </h5>
+
+    <table class="table table-hover text-center align-middle">
+        <thead>
+            <tr>
+                <th>Materia</th>
+                <th>Calificación Final</th>
+                <th>Tipo</th>
+                <th>Estado</th>
+            </tr>
+        </thead>
+
+        <tbody>
+            {% for materia in datos.materias %}
+            <tr>
+                <td class="text-start">{{ materia.nombre }}</td>
+                <td>
+                    {% if materia.final %}
+                        {{ materia.final }}
+                    {% else %}
+                        -
+                    {% endif %}
+                </td>
+
+                <td>
+                    {% if materia.tipo == 'Regularización' %}
+                        <span class="badge bg-info text-dark">Regularización</span>
+                    {% else %}
+                        <span class="badge bg-primary">Ordinario</span>
+                    {% endif %}
+                </td>
+
+
+                <td>
+                    {% if materia.estado == 'Aprobada' %}
+                        <span class="badge bg-success">Aprobada</span>
+                    {% elif materia.estado == 'Reprobada' %}
+                        <span class="badge bg-danger">Reprobada</span>
+                    {% else %}
+                        <span class="badge bg-secondary">Sin calificar</span>
+                    {% endif %}
+                </td>
+            </tr>
+            {% endfor %}
+        </tbody>
+    </table>
+
+    <p class="fw-semibold">
+        Promedio del semestre:
+        {% if datos.promedio %}
+            {{ datos.promedio }}
+        {% else %}
+            -
+        {% endif %}
+    </p>
+
+    <div class="row mt-3 text-center">
+
+        <div class="col">
+            <strong>Materias</strong><br>
+            {{ datos.cursadas }}
+        </div>
+    
+        <div class="col">
+            <strong>Aprobadas</strong><br>
+            <span class="text-success">
+                {{ datos.aprobadas }}
+            </span>
+        </div>
+    
+        <div class="col">
+            <strong>Reprobadas</strong><br>
+            <span class="text-danger">
+                {{ datos.reprobadas }}
+            </span>
+        </div>
+    
+        <div class="col">
+            <strong>Promedio</strong><br>
+            {{ datos.promedio|default:"-" }}
+        </div>
+
+
+    </div>
+
+
+<hr class="my-4">
+
+{% empty %}
+<div class="alert alert-warning">
+    Este alumno no tiene materias inscritas.
+</div>
+
+{% endfor %}
+
+
+<div class="mt-4 mb-3">
+
+    <h4 class="fw-bold">
+        📊 Resumen General del Kardex
+    </h4>
+
+    <p class="text-muted mb-0">
+        Estadísticas acumuladas de toda la trayectoria académica del alumno.
+    </p>
+
+</div>
+
+<div class="row mb-4">
+    <div class="col-md-3">
+        <div class="card text-center shadow-sm border-0">
+            <div class="card-body">
+                <small class="text-muted">Promedio General</small>
+                <h3 class="fw-bold text-primary">
+                    {{ promedio_general|default:"-" }}
+                </h3>
+            </div>
+        </div>
+    </div>
+
+    <div class="col-md-3">
+        <div class="card text-center shadow-sm border-0">
+            <div class="card-body">
+                <small class="text-muted">Aprobadas</small>
+                <h3 class="fw-bold text-success">{{ aprobadas }}</h3>
+            </div>
+        </div>
+    </div>
+
+    <div class="col-md-3">
+        <div class="card text-center shadow-sm border-0">
+            <div class="card-body">
+                <small class="text-muted">Reprobadas</small>
+                <h3 class="fw-bold text-danger">{{ reprobadas }}</h3>
+            </div>
+        </div>
+    </div>
+
+    <div class="col-md-3">
+        <div class="card text-center shadow-sm border-0">
+            <div class="card-body">
+                <small class="text-muted">Materias Cursadas</small>
+                <h3 class="fw-bold text-dark">
+                    {{ aprobadas|add:reprobadas }}
+                </h3>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

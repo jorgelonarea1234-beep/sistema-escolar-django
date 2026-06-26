@@ -72,6 +72,25 @@ class CalificacionForm(forms.ModelForm):
         }
 
 
+class RegularizacionForm(forms.ModelForm):
+    class Meta:
+        model = Calificacion
+        fields = ['regularizacion']
+
+        widgets = {
+            'regularizacion': forms.NumberInput(attrs={
+                'class': 'form-control',
+                'min': 0,
+                'max': 100,
+                'step': '0.01'
+            }),
+        }
+
+        labels = {
+            'regularizacion': 'Calificación de regularización'
+        }        
+
+
 from django import forms
 from .models import Alumno
 
