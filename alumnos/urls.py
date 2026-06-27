@@ -37,6 +37,7 @@ urlpatterns = [
 
     #KARDEX
     path('kardex/<int:id>/', views.kardex_alumno, name='kardex_alumno'),
+    path('kardex/<int:id>/pdf/', views.generar_kardex_pdf, name='generar_kardex_pdf'),
 
     
     # ⚡ AJAX CALIFICACIONES

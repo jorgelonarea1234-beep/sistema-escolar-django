@@ -24,9 +24,19 @@
             </div>
 
             <div class="col-md-4 text-md-end">
-                <a href="{% url 'detalle_alumno' alumno.id %}" class="btn btn-outline-dark btn-sm">
-                    ← Regresar al detalle
-                </a>
+                 <a href="{% url 'generar_kardex_pdf' alumno.id %}"
+                    class="btn btn-danger btn-sm mb-2">
+                     📄 Descargar PDF
+                 </a>
+             
+                 <br>
+             
+                 <a href="{% url 'detalle_alumno' alumno.id %}"
+                    class="btn btn-outline-dark btn-sm">
+                     ← Regresar al Alumno
+                 </a>
+
+
             </div>
         </div>
     </div>

@@ -39,6 +39,7 @@ import json
 from .models import Horario
 from .models import ConfiguracionParcial
 from reportlab.lib.pagesizes import letter
+from datetime import datetime
 from reportlab.platypus import SimpleDocTemplate, Table, TableStyle, Paragraph, Spacer
 from reportlab.lib.styles import getSampleStyleSheet
 from reportlab.lib import colors
@@ -713,6 +714,124 @@ def obtener_kardex(alumno):
         'reprobadas': reprobadas,
         'materias_cursadas': aprobadas + reprobadas
     }
+
+
+@login_required
+def generar_kardex_pdf(request, id):
+
+    alumno = Alumno.objects.get(id=id)
+
+    if hasattr(request.user, 'alumno') and request.user.alumno.id != alumno.id:
+        return redirect('lista_alumnos')
+
+    datos_kardex = obtener_kardex(alumno)
+
+    response = HttpResponse(content_type='application/pdf')
+    response['Content-Disposition'] = f'attachment; filename="kardex_{alumno.matricula}.pdf"'
+
+    doc = SimpleDocTemplate(response, pagesize=letter)
+    styles = getSampleStyleSheet()
+    elementos = []
+
+    elementos.append(Paragraph("SISTEMA ESCOLAR", styles['Title']))
+    elementos.append(Paragraph("KARDEX ACADÉMICO", styles['Heading2']))
+    elementos.append(Spacer(1, 12))
+
+    elementos.append(Paragraph(f"<b>Alumno:</b> {alumno.nombre}", styles['Normal']))
+    elementos.append(Paragraph(f"<b>Matrícula:</b> {alumno.matricula}", styles['Normal']))
+    elementos.append(Paragraph(f"<b>Carrera:</b> {alumno.carrera}", styles['Normal']))
+    elementos.append(Paragraph(
+    f"<b>Fecha de emisión:</b> {datetime.now().strftime('%d/%m/%Y')}",
+    styles['Normal']
+    ))
+    
+    elementos.append(Spacer(1, 20))
+
+    for semestre, datos in datos_kardex['kardex'].items():
+
+        elementos.append(Paragraph(datos['nombre'], styles['Heading3']))
+        elementos.append(Spacer(1, 8))
+
+        data = [
+            ['Materia', 'Final', 'Tipo', 'Estado']
+        ]
+
+        for materia in datos['materias']:
+            data.append([
+                materia['nombre'],
+                str(materia['final'] if materia['final'] is not None else '-'),
+                materia['tipo'],
+                materia['estado']
+            ])
+
+        tabla = Table(data, colWidths=[240, 60, 100, 90])
+
+        tabla.setStyle(TableStyle([
+            ('BACKGROUND', (0, 0), (-1, 0), colors.black),
+            ('TEXTCOLOR', (0, 0), (-1, 0), colors.white),
+            ('ALIGN', (1, 1), (-1, -1), 'CENTER'),
+            ('FONTNAME', (0, 0), (-1, 0), 'Helvetica-Bold'),
+            ('GRID', (0, 0), (-1, -1), 0.5, colors.grey),
+            ('ROWBACKGROUNDS', (0, 1), (-1, -1), [colors.whitesmoke, colors.lightgrey]),
+            ('BOTTOMPADDING', (0, 0), (-1, 0), 8),
+            ('TOPPADDING', (0, 0), (-1, 0), 8),
+        ]))
+
+        elementos.append(tabla)
+        elementos.append(Spacer(1, 8))
+
+        elementos.append(Paragraph(
+            f"<b>Materias:</b> {datos['cursadas']} &nbsp;&nbsp; "
+            f"<b>Aprobadas:</b> {datos['aprobadas']} &nbsp;&nbsp; "
+            f"<b>Reprobadas:</b> {datos['reprobadas']} &nbsp;&nbsp; "
+            f"<b>Promedio:</b> {datos['promedio'] if datos['promedio'] is not None else '-'}",
+            styles['Normal']
+        ))
+
+        elementos.append(Spacer(1, 18))
+
+    elementos.append(Spacer(1, 10))
+    elementos.append(Paragraph("RESUMEN GENERAL", styles['Heading2']))
+
+    resumen = [
+        ['Promedio General', datos_kardex['promedio_general'] if datos_kardex['promedio_general'] is not None else '-'],
+        ['Materias Aprobadas', datos_kardex['aprobadas']],
+        ['Materias Reprobadas', datos_kardex['reprobadas']],
+        ['Materias Evaluadas', datos_kardex['materias_cursadas']],
+    ]
+
+    tabla_resumen = Table(resumen, colWidths=[250, 120])
+
+    tabla_resumen.setStyle(TableStyle([
+        ('GRID', (0, 0), (-1, -1), 0.5, colors.grey),
+        ('FONTNAME', (0, 0), (0, -1), 'Helvetica-Bold'),
+        ('ALIGN', (1, 0), (1, -1), 'CENTER'),
+        ('BACKGROUND', (0, 0), (-1, -1), colors.whitesmoke),
+        ('BOTTOMPADDING', (0, 0), (-1, -1), 8),
+        ('TOPPADDING', (0, 0), (-1, -1), 8),
+    ]))
+
+    elementos.append(tabla_resumen)
+
+    
+
+    elementos.append(Spacer(1, 50))
+
+    firma = Table([
+        ['______________________________'],
+        ['Control Escolar']
+    ], colWidths=[250])
+    
+    firma.setStyle(TableStyle([
+        ('ALIGN', (0, 0), (-1, -1), 'CENTER'),
+        ('FONTNAME', (0, 1), (0, 1), 'Helvetica-Bold'),
+        ('TOPPADDING', (0, 1), (0, 1), 6),
+    ]))
+    
+    elementos.append(firma)
+    doc.build(elementos)
+
+    return response
 
 
 

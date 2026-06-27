@@ -1,0 +1,5 @@
+manage.py
+db.sqlite3
+alumnos/
+config/
+venv/
