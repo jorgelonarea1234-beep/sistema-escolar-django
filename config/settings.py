@@ -153,4 +153,7 @@ LOGIN_REDIRECT_URL = '/alumnos/'
 
 SESSION_ENGINE = 'django.contrib.sessions.backends.db'
 
+MEDIA_URL = '/media/'
+MEDIA_ROOT = BASE_DIR / 'media'
+
 

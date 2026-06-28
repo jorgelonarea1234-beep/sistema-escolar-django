@@ -1,5 +1,5 @@
 from django.contrib import admin
-from .models import Alumno, Materia, Carrera, Calificacion, Maestro, Horario
+from .models import Alumno, Materia, Carrera, Calificacion, Maestro, Horario, Directivo
 from .models import ConfiguracionParcial
 from .models import ConfiguracionRegularizacion
 
@@ -20,3 +20,4 @@ admin.site.register(Maestro)
 admin.site.register(Carrera)
 admin.site.register(Alumno)
 admin.site.register(Calificacion)
+admin.site.register(Directivo)

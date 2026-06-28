@@ -9,9 +9,35 @@ class Maestro(models.Model):
 
     def __str__(self):
         return self.nombre
+    
+
+    foto = models.ImageField(
+    upload_to='maestros/',
+    null=True,
+    blank=True
+    )
 
 
+class Directivo(models.Model):
 
+    user = models.OneToOneField(User, on_delete=models.CASCADE)
+
+    nombre = models.CharField(max_length=200)
+
+    correo = models.EmailField()
+
+    cargo = models.CharField(max_length=100)
+
+    foto = models.ImageField(
+        upload_to='directivos/',
+        blank=True,
+        null=True
+    )
+
+    def __str__(self):
+        return self.nombre
+    
+    
 
 class Carrera(models.Model):
     nombre = models.CharField(max_length=100)
@@ -90,6 +116,12 @@ class Alumno(models.Model):
         unique=True,
         blank=True,
         null=True
+    )
+
+    foto = models.ImageField(
+    upload_to='alumnos/',
+    null=True,
+    blank=True
     )
 
     def generar_matricula(self):

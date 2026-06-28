@@ -1,5 +1,5 @@
 {% extends 'base.html' %}
-
+{% load static %}
 {% block content %}
 
 <div class="card p-4 shadow-sm" style="max-width: 500px; margin:auto;">
@@ -8,14 +8,32 @@
         Editar Alumno
     </h4>
 
-    <form method="POST">
+    <form method="POST" enctype="multipart/form-data">
         {% csrf_token %}
 
+        <div class="text-center mb-4">
+
+            {% if alumno.foto %}
+                <img src="{{ alumno.foto.url }}" class="avatar-perfil">
+            {% else %}
+                <img src="{% static 'img/avatar.jpg' %}" class="avatar-perfil">
+            {% endif %}
+        
+            <h5 class="mt-3 fw-bold">
+                {{ alumno.nombre }}
+            </h5>
+
+        </div>
+
+
+        
+
+<!--
         <div class="mb-3">
             <label class="form-label">Matrícula</label>
             {{ form.matricula }}
         </div>
-
+-->
         <div class="mb-3">
             <label class="form-label">Nombre</label>
             {{ form.nombre }}
@@ -32,9 +50,21 @@
         </div>
 
         <div class="mb-3">
-            <label class="form-label">Materias</label>
-            {{ form.materias }}
+
+            <label class="form-label">
+                Cambiar fotografía
+            </label>
+        
+            {{ form.foto }}
+        
+            <small class="text-muted">
+                Si seleccionas una nueva imagen, reemplazará la actual.
+            </small>
+
         </div>
+
+        
+        
 
        <button type="button" class="btn btn-dark w-100"
         data-bs-toggle="modal"

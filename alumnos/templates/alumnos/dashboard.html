@@ -1,48 +1,185 @@
 {% extends 'base.html' %}
-
+{% load static %}
 {% block content %}
 
-<div class="card p-4 shadow-sm">
 
-    <h3 class="mb-4">Dashboard</h3>
 
     <!-- DEBUG -->
-    <h5>Tipo: {{ tipo }}</h5>
+    
 
     <!-- ========================= -->
     <!-- 👑 ADMIN -->
     <!-- ========================= -->
     {% if tipo == 'admin' %}
 
-    <div class="row mt-4">
+    <div class="card p-4 shadow-sm">
 
-        <div class="col-md-4">
-            <div class="card p-3 text-center shadow-sm">
-                <h5>Alumnos</h5>
-                <h2>{{ total_alumnos }}</h2>
+    <h3 class="fw-bold mb-1">Dashboard Administrativo</h3>
+        <p class="text-muted mb-4">
+            Bienvenido, {{ request.user.username }}. Aquí tienes un resumen general del sistema escolar.
+        </p>
+
+    <div class="row mt-4 g-4">
+
+    <div class="col-md-3">
+        <div class="card dashboard-card p-3" style="border-bottom-color:#0d6efd;">
+            <div class="d-flex align-items-center gap-3">
+                <div class="dashboard-icon-box bg-primary bg-opacity-10">
+                    <i class="bi bi-mortarboard-fill text-primary"></i>
+                </div>
+                <div>
+                    <h6 class="fw-bold mb-1">Alumnos</h6>
+                    <h2 class="fw-bold text-primary mb-0">{{ total_alumnos }}</h2>
+                </div>
             </div>
         </div>
-
-        <div class="col-md-4">
-            <div class="card p-3 text-center shadow-sm">
-                <h5>Maestros</h5>
-                <h2>{{ total_maestros }}</h2>
-            </div>
-        </div>
-
-        <div class="col-md-4">
-            <div class="card p-3 text-center shadow-sm">
-                <h5>Materias</h5>
-                <h2>{{ total_materias }}</h2>
-            </div>
-        </div>
-
     </div>
 
-    <!-- 🔥 GRÁFICA ADMIN -->
-    <div class="mt-5">
-        <canvas id="graficaAdmin"></canvas>
+    <div class="col-md-3">
+        <div class="card dashboard-card p-3" style="border-bottom-color:#198754;">
+            <div class="d-flex align-items-center gap-3">
+                <div class="dashboard-icon-box bg-success bg-opacity-10">
+                    <i class="bi bi-person-workspace text-success"></i>
+                </div>
+                <div>
+                    <h6 class="fw-bold mb-1">Maestros</h6>
+                    <h2 class="fw-bold text-success mb-0">{{ total_maestros }}</h2>
+                </div>
+            </div>
+        </div>
     </div>
+
+    <div class="col-md-3">
+        <div class="card dashboard-card p-3" style="border-bottom-color:#ffc107;">
+            <div class="d-flex align-items-center gap-3">
+                <div class="dashboard-icon-box bg-warning bg-opacity-10">
+                    <i class="bi bi-book-fill text-warning"></i>
+                </div>
+                <div>
+                    <h6 class="fw-bold mb-1">Materias</h6>
+                    <h2 class="fw-bold text-warning mb-0">{{ total_materias }}</h2>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div class="col-md-3">
+        <div class="card dashboard-card p-3" style="border-bottom-color:#dc3545;">
+            <div class="d-flex align-items-center gap-3">
+                <div class="dashboard-icon-box bg-danger bg-opacity-10">
+                    <i class="bi bi-bank2 text-danger"></i>
+                </div>
+                <div>
+                    <h6 class="fw-bold mb-1">Carreras</h6>
+                    <h2 class="fw-bold text-danger mb-0">{{ total_carreras }}</h2>
+                </div>
+            </div>
+        </div>
+    </div>
+
+</div>    
+        
+      
+
+<!--SEGUNDA  FILA-->
+
+          <div class="row mt-4">
+      
+          <div class="col-md-4">
+              <div class="card p-3 text-center shadow-sm border-0 dashboard-card">
+                    <i class="bi bi-journal-check text-dark dashboard-icon"></i>
+                    <h6 class="text-muted">Calificaciones</h6>
+                    <h2 class="fw-bold text-dark">{{ total_calificaciones }}</h2>
+               </div>
+          </div>
+      
+          <div class="col-md-4">
+              <div class="card p-3 text-center shadow-sm border-0 dashboard-card">
+                    <i class="bi bi-check-circle-fill text-success dashboard-icon"></i>
+                    <h6 class="text-muted">Aprobadas</h6>
+                    <h2 class="fw-bold text-success">{{ aprobadas }}</h2>
+              </div>
+          </div>
+      
+          <div class="col-md-4">
+              <div class="card p-3 text-center shadow-sm border-0 dashboard-card">
+                    <i class="bi bi-x-circle-fill text-danger dashboard-icon"></i>
+                    <h6 class="text-muted">Reprobadas</h6>
+                    <h2 class="fw-bold text-danger">{{ reprobadas }}</h2>
+               </div>
+          </div>
+          
+      
+      </div>
+
+
+      <div class="row mt-4 g-4">
+
+    <div class="col-lg-6">
+        <div class="card dashboard-card p-4 h-100">
+            <h5 class="fw-bold mb-4">
+                <i class="bi bi-bar-chart-fill text-primary"></i>
+                Totales del Sistema
+            </h5>
+
+            <div style="height:300px;">
+                <canvas id="graficaTotales"></canvas>
+            </div>
+        </div>
+    </div>
+
+    <div class="col-lg-6">
+        <div class="card dashboard-card p-4 h-100">
+            <h5 class="fw-bold mb-4">
+                <i class="bi bi-pie-chart-fill text-primary"></i>
+                Aprobadas vs Reprobadas
+            </h5>
+
+            <div class="d-flex justify-content-center align-items-center" style="height:300px;">
+                <div style="width:250px; height:250px;">
+                    <canvas id="graficaAprobadas"></canvas>
+                </div>
+            </div>
+        </div>
+    </div>
+
+</div>
+
+
+
+      <div class="card p-3 shadow-sm border-0 mt-4">
+
+    <h5 class="fw-bold mb-3">
+        👨‍🎓 Últimos alumnos registrados
+    </h5>
+
+    <table class="table table-hover align-middle">
+        <thead>
+            <tr>
+                <th>Alumno</th>
+                <th>Matrícula</th>
+                <th>Carrera</th>
+            </tr>
+        </thead>
+
+        <tbody>
+            {% for alumno in ultimos_alumnos %}
+            <tr>
+                <td>{{ alumno.nombre }}</td>
+                <td>{{ alumno.matricula }}</td>
+                <td>{{ alumno.carrera }}</td>
+            </tr>
+            {% empty %}
+            <tr>
+                <td colspan="3" class="text-center text-muted">
+                    No hay alumnos registrados.
+                </td>
+            </tr>
+            {% endfor %}
+        </tbody>
+    </table>
+
+</div>
 
     {% endif %}
 
@@ -50,32 +187,119 @@
     <!-- ========================= -->
     <!-- 👨‍🏫 MAESTRO -->
     <!-- ========================= -->
+    
     {% if tipo == 'maestro' %}
 
-    <div class="row mt-4">
+<h3 class="fw-bold mb-1">
+    Dashboard del Maestro
+</h3>
 
-        <div class="col-md-6">
-            <div class="card p-3 text-center shadow-sm">
-                <h5>Mis Materias</h5>
-                <h2>{{ materias }}</h2>
+<p class="text-muted mb-4">
+    Bienvenido, {{ maestro.nombre }}. Consulta tus materias, alumnos y actividades académicas.
+</p>
+
+<div class="row mt-4 g-4">
+
+    <div class="col-md-3">
+        <div class="card dashboard-card p-3" style="border-bottom-color:#0d6efd;">
+            <div class="d-flex align-items-center gap-3">
+                <div class="dashboard-icon-box bg-primary bg-opacity-10">
+                    <i class="bi bi-book-fill text-primary"></i>
+                </div>
+
+                <div>
+                    <h6 class="fw-bold mb-1">Materias</h6>
+                    <h2 class="fw-bold text-primary mb-0">{{ materias }}</h2>
+                </div>
             </div>
         </div>
+    </div>
 
-        <div class="col-md-6">
-            <div class="card p-3 text-center shadow-sm">
-                <h5>Mis Alumnos</h5>
-                <h2>{{ alumnos }}</h2>
+    <div class="col-md-3">
+        <div class="card dashboard-card p-3" style="border-bottom-color:#198754;">
+            <div class="d-flex align-items-center gap-3">
+                <div class="dashboard-icon-box bg-success bg-opacity-10">
+                    <i class="bi bi-mortarboard-fill text-success"></i>
+                </div>
+
+                <div>
+                    <h6 class="fw-bold mb-1">Alumnos</h6>
+                    <h2 class="fw-bold text-success mb-0">{{ alumnos }}</h2>
+                </div>
             </div>
         </div>
-
     </div>
 
-    <!-- 🔥 GRÁFICA MAESTRO -->
-    <div class="mt-5">
-        <canvas id="graficaMaestro"></canvas>
+    <div class="col-md-3">
+        <div class="card dashboard-card p-3" style="border-bottom-color:#6f42c1;">
+            <div class="d-flex align-items-center gap-3">
+                <div class="dashboard-icon-box bg-primary bg-opacity-10">
+                    <i class="bi bi-clipboard2-check-fill text-primary"></i>
+                </div>
+
+                <div>
+                    <h6 class="fw-bold mb-1">Calificaciones</h6>
+                    <h2 class="fw-bold text-primary mb-0">{{ calificaciones }}</h2>
+                </div>
+            </div>
+        </div>
     </div>
 
-    {% endif %}
+    <div class="col-md-3">
+        <div class="card dashboard-card p-3" style="border-bottom-color:#dc3545;">
+            <div class="d-flex align-items-center gap-3">
+                <div class="dashboard-icon-box bg-danger bg-opacity-10">
+                    <i class="bi bi-exclamation-triangle-fill text-danger"></i>
+                </div>
+
+                <div>
+                    <h6 class="fw-bold mb-1">Regularizaciones</h6>
+                    <h2 class="fw-bold text-danger mb-0">{{ regularizaciones }}</h2>
+                </div>
+            </div>
+        </div>
+    </div>
+
+</div>
+
+<div class="card dashboard-card p-4 mt-4">
+
+    <h5 class="fw-bold mb-3">
+        <i class="bi bi-journal-bookmark-fill text-primary"></i>
+        Mis materias
+    </h5>
+
+    <div class="table-responsive">
+        <table class="table table-hover align-middle mb-0">
+            <thead class="table-dark">
+                <tr>
+                    <th>Materia</th>
+                    <th>Clave</th>
+                    <th>Semestre</th>
+                </tr>
+            </thead>
+
+            <tbody>
+                {% for materia in mis_materias %}
+                <tr>
+                    <td>{{ materia.nombre }}</td>
+                    <td>{{ materia.clave }}</td>
+                    <td>{{ materia.semestre }}</td>
+                </tr>
+                {% empty %}
+                <tr>
+                    <td colspan="3" class="text-center text-muted">
+                        No tienes materias asignadas.
+                    </td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
+
+</div>
+
+{% endif %}
 
 
     <!-- ========================= -->
@@ -83,83 +307,190 @@
     <!-- ========================= -->
     {% if tipo == 'alumno' %}
 
-    <div class="card p-3 mt-4">
+<h3 class="fw-bold mb-1">Dashboard del Alumno</h3>
+<p class="text-muted mb-4">
+    Bienvenido, {{ nombre }}. Aquí puedes consultar tu avance académico.
+</p>
 
-        <h5>{{ nombre }}</h5>
-        <p><b>Matrícula:</b> {{ matricula }}</p>
-        <p><b>Carrera:</b> {{ carrera }}</p>
-        <p><b>Materias inscritas:</b> {{ materias }}</p>
-
+<div class="card shadow-sm border-0 p-4 mb-4">
+   <div class="row align-items-center">
+      
+          <div class="col-md-3 text-center">
+      
+              {% if alumno.foto %}
+                  <img src="{{ alumno.foto.url }}"
+                       class="avatar-perfil">
+              {% else %}
+                  <img src="{% static 'img/avatar.jpg' %}"
+                       class="avatar-perfil">
+              {% endif %}
+      
+          </div>
+      
+          <div class="col-md-9">
+      
+              <h3 class="fw-bold">
+                  {{ alumno.nombre }}
+              </h3>
+      
+              <p class="mb-1">
+                  <strong>Matrícula:</strong>
+                  {{ matricula }}
+              </p>
+      
+              <p class="mb-1">
+                  <strong>Carrera:</strong>
+                  {{ carrera }}
+              </p>
+      
     </div>
 
-    <!-- 🔥 GRÁFICA ALUMNO -->
-    <div class="mt-5">
-        <canvas id="graficaAlumno"></canvas>
+</div> 
+</div>
+
+<div class="row g-4">
+
+    <div class="col-md-3">
+        <div class="card dashboard-card p-3" style="border-bottom-color:#0d6efd;">
+            <div class="d-flex align-items-center gap-3">
+                <div class="dashboard-icon-box bg-primary bg-opacity-10">
+                    <i class="bi bi-book-fill text-primary"></i>
+                </div>
+                <div>
+                    <h6 class="fw-bold mb-1">Materias inscritas</h6>
+                    <h2 class="fw-bold text-primary mb-0">{{ materias }}</h2>
+                </div>
+            </div>
+        </div>
     </div>
 
-    {% endif %}
+    <div class="col-md-3">
+        <div class="card dashboard-card p-3" style="border-bottom-color:#198754;">
+            <div class="d-flex align-items-center gap-3">
+                <div class="dashboard-icon-box bg-success bg-opacity-10">
+                    <i class="bi bi-check-circle-fill text-success"></i>
+                </div>
+                <div>
+                    <h6 class="fw-bold mb-1">Aprobadas</h6>
+                    <h2 class="fw-bold text-success mb-0">{{ aprobadas }}</h2>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div class="col-md-3">
+        <div class="card dashboard-card p-3" style="border-bottom-color:#dc3545;">
+            <div class="d-flex align-items-center gap-3">
+                <div class="dashboard-icon-box bg-danger bg-opacity-10">
+                    <i class="bi bi-x-circle-fill text-danger"></i>
+                </div>
+                <div>
+                    <h6 class="fw-bold mb-1">Reprobadas</h6>
+                    <h2 class="fw-bold text-danger mb-0">{{ reprobadas }}</h2>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div class="col-md-3">
+        <div class="card dashboard-card p-3" style="border-bottom-color:#6f42c1;">
+            <div class="d-flex align-items-center gap-3">
+                <div class="dashboard-icon-box bg-primary bg-opacity-10">
+                    <i class="bi bi-graph-up-arrow text-primary"></i>
+                </div>
+                <div>
+                    <h6 class="fw-bold mb-1">Promedio</h6>
+                    <h2 class="fw-bold text-primary mb-0">
+                        {{ promedio_general|default:"-" }}
+                    </h2>
+                </div>
+            </div>
+        </div>
+    </div>
 
 </div>
+
+{% endif %}
+
 
 {% endblock %}
 
 
 {% block scripts %}
-
 <script>
 document.addEventListener("DOMContentLoaded", function () {
 
-    // =========================
-    // 👑 ADMIN
-    // =========================
-    const ctxAdmin = document.getElementById('graficaAdmin');
+    const graficaTotales = document.getElementById('graficaTotales');
 
-    if (ctxAdmin) {
-        new Chart(ctxAdmin, {
+    if (graficaTotales) {
+        new Chart(graficaTotales, {
             type: 'bar',
             data: {
-                labels: ['Alumnos', 'Maestros', 'Materias'],
+                labels: ['Alumnos', 'Maestros', 'Materias', 'Carreras'],
                 datasets: [{
-                    label: 'Totales',
-                    data: [{{ total_alumnos|default:0 }}, {{ total_maestros|default:0 }}, {{ total_materias|default:0 }}],
-                    backgroundColor: ['#0d6efd', '#198754', '#ffc107']
+                    data: [
+                        {{ total_alumnos|default:0 }},
+                        {{ total_maestros|default:0 }},
+                        {{ total_materias|default:0 }},
+                        {{ total_carreras|default:0 }}
+                    ],
+                    backgroundColor: [
+                        '#0d6efd',
+                        '#198754',
+                        '#ffc107',
+                        '#dc3545'
+                    ],
+                    borderRadius: 8
                 }]
+            },
+            options: {
+                responsive: true,
+                maintainAspectRatio: false,
+                plugins: {
+                    legend: {
+                        display: false
+                    }
+                },
+                scales: {
+                    y: {
+                        beginAtZero: true,
+                        ticks: {
+                            precision: 0
+                        }
+                    }
+                }
             }
         });
     }
 
-    // =========================
-    // 👨‍🏫 MAESTRO
-    // =========================
-    const ctxMaestro = document.getElementById('graficaMaestro');
+    const graficaAprobadas = document.getElementById('graficaAprobadas');
 
-    if (ctxMaestro) {
-        new Chart(ctxMaestro, {
+    if (graficaAprobadas) {
+        new Chart(graficaAprobadas, {
             type: 'doughnut',
             data: {
-                labels: ['Materias', 'Alumnos'],
+                labels: ['Aprobadas', 'Reprobadas'],
                 datasets: [{
-                    data: [{{ materias|default:0 }}, {{ alumnos|default:0 }}],
-                    backgroundColor: ['#0d6efd', '#dc3545']
+                    data: [
+                        {{ aprobadas|default:0 }},
+                        {{ reprobadas|default:0 }}
+                    ],
+                    backgroundColor: [
+                        '#198754',
+                        '#dc3545'
+                    ],
+                    borderWidth: 2
                 }]
-            }
-        });
-    }
-
-    // =========================
-    // 👨‍🎓 ALUMNO
-    // =========================
-    const ctxAlumno = document.getElementById('graficaAlumno');
-
-    if (ctxAlumno) {
-        new Chart(ctxAlumno, {
-            type: 'pie',
-            data: {
-                labels: ['Materias inscritas'],
-                datasets: [{
-                    data: [{{ materias|default:0 }}],
-                    backgroundColor: ['#198754']
-                }]
+            },
+            options: {
+                responsive: true,
+                maintainAspectRatio: false,
+                cutout: '68%',
+                plugins: {
+                    legend: {
+                        position: 'bottom'
+                    }
+                }
             }
         });
     }

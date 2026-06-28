@@ -21,7 +21,7 @@
         {% endfor %}
     {% endif %}
 
-    <form method="POST" autocomplete="off">
+    <form method="POST" enctype="multipart/form-data" autocomplete="off">
         {% csrf_token %}
 
         <!-- MATRÍCULA -->
@@ -58,6 +58,21 @@
                 {% endfor %}
             </select>
         </div>
+
+        <!-- FOTO -->
+         <div class="mb-3">
+             <label class="form-label">Fotografía</label>
+         
+             <input
+                 type="file"
+                 name="foto"
+                 class="form-control"
+                 accept="image/*">
+         
+             <small class="text-muted">
+                 Opcional. Si no seleccionas una imagen, se utilizará un avatar por defecto.
+             </small>
+         </div>
 
         <!-- BOTÓN -->
         <button class="btn btn-dark w-100">

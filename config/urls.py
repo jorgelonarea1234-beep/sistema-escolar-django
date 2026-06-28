@@ -1,6 +1,10 @@
 from django.contrib import admin
 from django.urls import path, include
 from alumnos.views import login_view, logout_view
+from django.conf import settings
+from django.conf.urls.static import static
+
+
 
 urlpatterns = [
 
@@ -12,3 +16,6 @@ urlpatterns = [
 
     path('logout/', logout_view, name='logout'),
 ]
+
+if settings.DEBUG:
+    urlpatterns += static(settings.MEDIA_URL, document_root=settings.MEDIA_ROOT)

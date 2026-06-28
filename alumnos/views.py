@@ -3,11 +3,10 @@ from django.contrib.auth.decorators import login_required, permission_required
 from django.shortcuts import render, redirect
 from django.http import HttpResponse
 from django.db.models import Count, Avg, Q
-from .models import Alumno, Materia, Calificacion
+from .models import Alumno, Materia, Calificacion, Carrera, Materia
 from .forms import AlumnoForm, MateriaForm, CalificacionForm, RegularizacionForm
 import openpyxl
 from openpyxl import load_workbook
-from .models import Carrera, Materia
 from django.shortcuts import render, redirect, get_object_or_404
 from reportlab.platypus import SimpleDocTemplate, Table, TableStyle, Paragraph
 from reportlab.lib.styles import getSampleStyleSheet
@@ -552,9 +551,7 @@ def crear_calificacion_ajax(request):
 @permission_required('alumnos.change_calificacion', raise_exception=True)
 def lista_regularizaciones(request):
 
-    config = ConfiguracionRegularizacion.objects.first()
-    if not config or not config.habilitado:
-        messages.error(request, "Las regularizaciones aún no están habilitadas.")
+    if not (request.user.is_superuser or hasattr(request.user, 'maestro')):
         return redirect('lista_alumnos')
 
     calificaciones = Calificacion.objects.filter(
@@ -562,7 +559,14 @@ def lista_regularizaciones(request):
     ).select_related(
         'alumno',
         'materia'
-    ).order_by(
+    )
+
+    if hasattr(request.user, 'maestro') and not request.user.is_superuser:
+        calificaciones = calificaciones.filter(
+            materia__maestro=request.user.maestro
+        )
+
+    calificaciones = calificaciones.order_by(
         'alumno__nombre',
         'materia__nombre',
         'parcial'
@@ -592,6 +596,18 @@ def capturar_regularizacion(request, pk):
         pk=pk
     )
 
+    # Seguridad:
+    # Admin puede editar todas.
+    # Maestro solo puede editar calificaciones de sus materias.
+    if not request.user.is_superuser:
+        if not hasattr(request.user, 'maestro'):
+            messages.error(request, "No tienes permiso para capturar esta regularización.")
+            return redirect('lista_alumnos')
+
+        if calificacion.materia.maestro != request.user.maestro:
+            messages.error(request, "No puedes capturar regularizaciones de materias que no son tuyas.")
+            return redirect('lista_regularizaciones')
+
     if request.method == 'POST':
 
         form = RegularizacionForm(
@@ -601,6 +617,7 @@ def capturar_regularizacion(request, pk):
 
         if form.is_valid():
             form.save()
+            messages.success(request, "Regularización guardada correctamente.")
             return redirect('lista_regularizaciones')
 
     else:
@@ -617,7 +634,6 @@ def capturar_regularizacion(request, pk):
             'calificacion': calificacion
         }
     )
-
 
 def obtener_kardex(alumno):
 
@@ -945,41 +961,80 @@ def dashboard(request):
     # 👑 ADMIN
     if user.is_superuser or user.groups.filter(name='admin').exists():
 
+        calificaciones = Calificacion.objects.all()
+        aprobadas = 0
+        reprobadas = 0
+        
+        for c in calificaciones:
+            final = c.calificacion_final()
+        
+            if final >= 70:
+                aprobadas += 1
+            else:
+                reprobadas += 1
+        
+        ultimos_alumnos = Alumno.objects.all().order_by('-id')[:5]
+        
         context = {
             'tipo': 'admin',
             'total_alumnos': Alumno.objects.count(),
             'total_maestros': Maestro.objects.count(),
             'total_materias': Materia.objects.count(),
+            'total_carreras': Carrera.objects.count(),
+            'total_calificaciones': calificaciones.count(),
+            'aprobadas': aprobadas,
+            'reprobadas': reprobadas,
+            'ultimos_alumnos': ultimos_alumnos,
         }
 
     # 👨‍🏫 MAESTRO
     elif user.groups.filter(name='maestro').exists():
 
         maestro = Maestro.objects.get(user=user)
-
+    
         materias = Materia.objects.filter(maestro=maestro)
-
+    
         alumnos = Alumno.objects.filter(
             materias__maestro=maestro
         ).distinct()
-
+    
+        calificaciones = Calificacion.objects.filter(
+            materia__maestro=maestro
+        )
+    
+        regularizaciones = calificaciones.filter(
+            calificacion__lt=70,
+            regularizacion__isnull=True
+        )
+    
         context = {
             'tipo': 'maestro',
+            'maestro': maestro,
             'materias': materias.count(),
             'alumnos': alumnos.count(),
+            'calificaciones': calificaciones.count(),
+            'regularizaciones': regularizaciones.count(),
+            'mis_materias': materias,
         }
 
     # 👨‍🎓 ALUMNO
     elif user.groups.filter(name='alumno').exists():
 
         alumno = Alumno.objects.get(user=user)
-
+    
+        datos_kardex = obtener_kardex(alumno)
+    
         context = {
             'tipo': 'alumno',
+            'alumno': alumno,
             'nombre': alumno.nombre,
             'matricula': alumno.matricula,
             'carrera': alumno.carrera.nombre,
             'materias': alumno.materias.count(),
+            'promedio_general': datos_kardex['promedio_general'],
+            'aprobadas': datos_kardex['aprobadas'],
+            'reprobadas': datos_kardex['reprobadas'],
+            'materias_cursadas': datos_kardex['materias_cursadas'],
         }
 
     else:
@@ -1115,28 +1170,26 @@ def crear_alumno(request):
         correo = request.POST.get('correo')
         password = request.POST.get('password')
         carrera_id = request.POST.get('carrera')
+        foto = request.FILES.get('foto')
 
-        # 🔥 validar usuario
         if User.objects.filter(username=correo).exists():
             messages.error(request, "El correo ya está registrado")
             return redirect('crear_alumno')
 
-        # 🔥 crear usuario
         user = User.objects.create_user(
             username=correo,
             email=correo,
             password=password
         )
 
-        # 🔥 obtener carrera
         carrera = Carrera.objects.get(id=carrera_id)
 
-        # 🔥 crear alumno
         Alumno.objects.create(
             nombre=nombre,
             correo=correo,
             carrera=carrera,
-            user=user
+            user=user,
+            foto=foto
         )
 
         messages.success(request, "Alumno creado correctamente")
@@ -1158,7 +1211,7 @@ def editar_alumno(request, id):
     alumno = Alumno.objects.get(id=id)
 
     if request.method == 'POST':
-        form = AlumnoForm(request.POST, instance=alumno)
+        form = AlumnoForm(request.POST, request.FILES, instance=alumno)
 
         if form.is_valid():
             form.save()
@@ -1171,7 +1224,8 @@ def editar_alumno(request, id):
         form = AlumnoForm(instance=alumno)
 
     return render(request, 'alumnos/editar_alumno.html', {
-        'form': form
+        'form': form,
+        'alumno': alumno
     })
 
 

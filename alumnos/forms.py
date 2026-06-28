@@ -99,20 +99,20 @@ class AlumnoForm(forms.ModelForm):
     password = forms.CharField(
         widget=forms.PasswordInput(attrs={'class': 'form-control'}),
         label="Contraseña",
-        required=False  # 🔥 importante para editar
+        required=False
     )
 
     class Meta:
         model = Alumno
-        fields = ['nombre', 'correo', 'carrera']
+        fields = ['nombre', 'correo', 'carrera', 'foto']
 
         widgets = {
             'nombre': forms.TextInput(attrs={'class': 'form-control'}),
             'correo': forms.EmailInput(attrs={'class': 'form-control'}),
             'carrera': forms.Select(attrs={'class': 'form-control'}),
+            'foto': forms.FileInput(attrs={'class': 'form-control'}),
         }
 
-    # 🔥 LIMPIEZA CORRECTA (SIN ROMPER CARRERA)
     def clean(self):
         cleaned_data = super().clean()
 
@@ -122,7 +122,6 @@ class AlumnoForm(forms.ModelForm):
 
         return cleaned_data
 
-    # 🔥 VALIDAR CORREO ÚNICO
     def clean_correo(self):
         correo = self.cleaned_data.get('correo')
 
